@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.group-mapper">
+    <!-- 공지사항 등록 -->
+    <insert id="saveGroup" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.group.repository.Group">
+        insert into tb_group (
+        title, memo, sys_reg_user_id, delete_at, sys_reg_date
+        ) values (
+        #{title}, #{memo}, #{sys_reg_user_id}, 'N', getDate()
+        )
+
+    </insert>
+    <insert id="saveGroupDept" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.group.repository.GroupDept">
+        insert into tb_group_dept (
+        dept_cd, group_id, delete_at, sys_reg_user_id, sys_reg_date
+        ) values (
+        #{dept_cd}, #{group_id}, 'N', #{sys_reg_user_id}, getDate()
+        )
+
+    </insert>
+
+    <select id="findGroupList"
+            parameterType="com.innon.education.admin.group.repository.Group"
+            resultType="com.innon.education.admin.group.repository.GroupDTO">
+        SELECT tg.id
+        , tg.title
+        , tg.memo
+        , tg.sys_reg_user_id
+        , ei.user_nm + ' [' + ed.dept_nm +']' AS sys_reg_user_nm
+        , tg.sys_reg_date
+        , CONVERT(CHAR(10), tg.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_group_dept WHERE tg.id = group_id AND delete_at = 'N') AS group_dept_cnt
+        FROM tb_group tg
+        LEFT JOIN edu_insa ei
+          ON (ei.user_id = tg.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+          ON (ei.dept_cd = ed.dept_cd)
+        WHERE tg.delete_at != 'Y'
+        <if test="title != null and title != ''">
+            AND tg.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="memo != null and memo != ''">
+            AND tg.memo LIKE CONCAT('%', #{memo}, '%')
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (tg.title LIKE CONCAT('%', #{search_txt}, '%')
+                        OR tg.memo LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        order by tg.sys_reg_date desc
+    </select>
+
+    <!-- 결제권자 조회 -->
+    <select id="findGroupDeptList"
+            resultType="com.innon.education.admin.group.repository.GroupDept"
+            parameterType="com.innon.education.admin.group.repository.Group">
+        SELECT tgd.group_id,
+        tgd.id
+        , tg.title
+        , tgd.dept_cd
+        , ed.dept_nm
+        , ed.dept_order
+        , ed.dept_level
+        , ed.PARENT_DEPT_CD
+        , (SELECT DEPT_NM FROM EDU_DEPT WHERE ed.PARENT_DEPT_CD = DEPT_CD) AS PARENT_DEPT_NM
+        FROM tb_group_dept tgd
+        LEFT JOIN  tb_group tg on tg.id = tgd.group_id
+        LEFT JOIN edu_dept ed on ed.dept_cd = tgd.dept_cd
+        WHERE tg.delete_at != 'Y'
+        and tgd.delete_at != 'Y'
+        <if test="id != null and id > 0">
+            AND tgd.group_id = #{id}
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (ed.dept_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        order by ed.dept_order
+    </select>
+
+    <select id="findGroupById"
+            parameterType="int"
+            resultType="com.innon.education.admin.group.repository.GroupDTO">
+        SELECT tg.id
+        , tg.title
+        , tg.memo
+        , tg.sys_reg_user_id
+        , (SELECT user_nm FROM edu_insa WHERE tg.sys_reg_user_id = user_id) sys_reg_user_nm
+        , tg.sys_reg_date
+        , CONVERT(CHAR(10), tg.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_group_dept WHERE tg.id = group_id and delete_at != 'Y' ) AS group_dept_cnt
+        FROM tb_group tg
+        WHERE 1=1
+        <if test="id != null and id > 0">
+            AND id = #{id}
+        </if>
+        ORDER BY tg.sys_reg_date DESC
+    </select>
+
+    <select id="findGroupDeptByDeptCd_back"
+            parameterType="String"
+            resultType="com.innon.education.admin.group.repository.GroupDept">
+        SELECT DISTINCT(dept_cd)
+          FROM tb_group_dept
+         WHERE group_id IN (
+             SELECT group_id
+               FROM tb_group_dept
+              WHERE dept_cd = #{dept_cd}
+                AND delete_at = 'N'
+         )
+           AND delete_at = 'N'
+    </select>
+
+
+    <update id="updateGroupUpdate"
+            parameterType="com.innon.education.admin.group.repository.Group">
+        UPDATE tb_group
+        SET title = #{title}
+        , memo = #{memo}
+        , sys_upd_user_id = #{sys_reg_user_id}
+        , sys_upd_reg_date = getDate()
+        <if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+        WHERE id = #{id}
+    </update>
+
+    <select id="updateGroupDept"
+            parameterType="com.innon.education.admin.group.repository.GroupDept"
+            resultType="int">
+        UPDATE tb_group_dept
+           SET sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+             , delete_at = 'Y'
+         WHERE group_id = #{group_id}
+    </select>
+<!--    <select id="updateGroupDept"-->
+<!--            parameterType="com.innon.education.admin.group.repository.GroupDept"-->
+<!--            resultType="int">-->
+<!--        DECLARE @id INT-->
+<!--        IF NOT EXISTS (-->
+<!--        SELECT id-->
+<!--        FROM tb_group_dept-->
+<!--        WHERE id = #{id}-->
+<!--        )-->
+<!--        BEGIN-->
+<!--        INSERT INTO tb_group_dept (-->
+<!--        sys_reg_user_id,-->
+<!--        dept_cd,-->
+<!--        group_id-->
+<!--        ) VALUES (-->
+<!--        #{sys_reg_user_id},-->
+<!--        #{dept_cd},-->
+<!--        #{group_id}-->
+<!--        )-->
+<!--        SELECT @id = SCOPE_IDENTITY()-->
+<!--        END-->
+<!--        ELSE-->
+<!--        BEGIN-->
+<!--        DECLARE @outputTable TABLE (oldId INT)-->
+<!--        UPDATE tb_group_dept-->
+<!--        SET sys_upd_reg_date = getDate()-->
+<!--        , sys_upd_user_id = #{sys_reg_user_id}-->
+<!--        <if test="dept_cd != null  and dept_cd != ''">-->
+<!--            ,dept_cd =#{dept_cd}-->
+<!--        </if>-->
+<!--        <if test="delete_at != null and delete_at != ''">-->
+<!--            , delete_at = 'Y'-->
+<!--        </if>-->
+<!--        OUTPUT DELETED.id INTO @outputTable-->
+<!--        WHERE id = #{id}-->
+<!--        SELECT @id = oldId FROM @outputTable-->
+<!--        SELECT @id AS id-->
+<!--        END-->
+<!--        SELECT @id AS id-->
+<!--    </select>-->
+
+</mapper>

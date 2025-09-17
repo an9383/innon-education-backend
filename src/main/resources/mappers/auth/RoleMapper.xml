@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- UserMapper.xml -->
+<mapper namespace="com.innon.education.auth.mapper.RoleMapper" >
+    <select id="loadUserAuthorities" parameterType="String" resultType="String">
+        SELECT rl.name
+        FROM roles rl left join role_user ru
+        on rl.id =ru.role_id
+        where ru.user_id  = #{user_id}
+    </select>
+    <select id="findRoleList"
+            resultType="com.innon.education.auth.entity.Role"
+            parameterType="com.innon.education.jwt.dto.CustomUserDetails">
+        SELECT rl.name, rl.description
+        FROM roles rl left join role_user ru
+        on rl.id =ru.role_id
+                 where ru.user_id  = #{user_id}
+
+    </select>
+    <select id="findRoleCheck"
+            parameterType="com.innon.education.auth.entity.Role"
+            resultType="com.innon.education.auth.entity.RoleDTO"
+           >
+        SELECT id, name, description, depth_level, parent_role_id FROM roles
+        <where>
+            <if test="name != '' and name != null">
+                and name  = #{name}
+            </if>
+        </where>
+    </select>
+
+    <select id="findRoleUserIdByName"
+            parameterType="map"
+            resultType="com.innon.education.auth.entity.Role">
+        SELECT id
+             , description
+             , name
+             , user_id
+          FROM roles
+         WHERE name IN (${name})
+    </select>
+    <insert id="saveRole" parameterType="com.innon.education.auth.entity.Role"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO roles (
+        description
+        , name
+        <if test="parent_role_id != null and parent_role_id > 0">, parent_role_id</if>
+        <if test="depth_level != null and depth_level > 0">, depth_level</if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">, sys_reg_user_id</if>
+        , delete_at
+        ) VALUES (
+        #{description}
+        , #{name}
+        <if test="parent_role_id != null and parent_role_id > 0">, #{parent_role_id}</if>
+        <if test="depth_level != null and depth_level > 0">, #{depth_level}</if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">, #{sys_reg_user_id}</if>
+        , 'N'
+        )
+    </insert>
+    <!--
+    <insert id="saveRoleUser" parameterType="com.innon.education.auth.entity.RoleUser"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO role_user (
+        role_id,
+        user_id
+        ) VALUES (
+        #{role_id},
+        #{user_id}
+        )
+    </insert>
+    -->
+
+    <select id="roleManageList"
+            resultType="com.innon.education.auth.entity.Role"
+            parameterType="com.innon.education.auth.entity.Role">
+        SELECT rl.name, rl.description ,rl.id, ei.user_nm sys_reg_user_nm
+        FROM roles rl
+        LEFT JOIN EDU_INSA ei on ei.user_id = rl.sys_reg_user_id
+        WHERE rl.delete_at != 'Y'
+    </select>
+
+    <select id="roleUserList"
+            resultType="com.innon.education.auth.entity.RoleDTO"
+            parameterType="com.innon.education.auth.entity.Role">
+        SELECT rl.name, rl.description, ru.user_id, ei.user_nm, ed.dept_cd,
+        (SELECT dept_nm FROM edu_dept where dept_cd = ed.dept_cd) AS dept_nm
+        FROM roles rl
+        inner join role_user ru on (rl.id =ru.role_id and ru.delete_at != 'Y')
+        inner join edu_insa ei on (ei.user_id = ru.user_id and use_flag = '1')
+        inner join edu_dept ed on ed.dept_cd = ei.dept_cd
+        where rl.id = #{id}
+    </select>
+
+    <update id="updateRoles"
+            parameterType="com.innon.education.auth.entity.Role">
+        UPDATE roles
+           SET description = #{description}
+             , name = #{name}
+         WHERE id = #{id}
+    </update>
+
+    <update id="deleteRoleUser"
+            parameterType="int">
+        UPDATE role_user
+           SET delete_at = 'Y'
+         WHERE role_id = #{role_id}
+    </update>
+
+    <insert id="saveRoleUser"
+            parameterType="com.innon.education.auth.entity.RoleUser">
+        MERGE INTO role_user
+        USING (SELECT 1 AS DUM) X
+           ON (role_id = #{role_id} AND user_id = #{user_id})
+         WHEN MATCHED THEN
+       UPDATE SET delete_at = 'N'
+            , sys_upd_user_id = #{sys_reg_user_id}
+         WHEN NOT MATCHED THEN
+       INSERT (
+           role_id,
+           user_id,
+           sys_reg_user_id,
+           sys_reg_date,
+           delete_at
+       ) VALUES (
+           #{role_id},
+           #{user_id},
+           #{sys_reg_user_id},
+           getDate(),
+           'N'
+       );
+    </insert>
+</mapper>

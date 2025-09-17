@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.management.mapper.progress-mapper">
+    <!-- 교육현황 진행 등록 -->
+    <insert id="saveEpuReason"
+            parameterType="com.innon.education.management.progress.repository.entity.ManagementProgressEntity">
+        MERGE INTO tb_epu_reason
+        USING (SELECT 1 AS DUM) X
+           ON (id = #{id})
+         WHEN MATCHED THEN
+       UPDATE SET status = #{status}, reason = #{reason}
+         WHEN NOT MATCHED THEN
+       INSERT (
+            plan_id,
+            qms_user_id,
+            reason,
+            status
+       ) VALUES (
+            #{plan_id},
+            #{qms_user_id},
+            #{reason},
+            #{status}
+       );
+    </insert>
+
+    <select id="planByAttendList"
+            parameterType="com.innon.education.management.progress.repository.entity.UserAttendanceEntity"
+            resultType="com.innon.education.management.progress.repository.dto.UserAttendanceDTO">
+
+        select epu.id, tec.plan_id, tec.edu_contents, ua.content_id,
+        CONVERT(CHAR(19), ua.attend_date, 20) attend_date_str
+        from tb_education_plan_user epu
+        left join tb_education_plan_content tec on tec.plan_id = epu.plan_id
+        left join tb_user_attendance ua on ua.content_id = tec.id and ua.attend_user_id= #{attend_user_id}
+        where 1=1
+          and tec.delete_at != 'Y'
+          and epu.delete_at != 'Y'
+          and tec.plan_id =#{plan_id}
+          and epu.qms_user_id = #{attend_user_id}
+    </select>
+
+
+
+    <!-- 교육계획 조회 -->
+    <select id="findManagementProgress"
+            parameterType="com.innon.education.management.progress.repository.entity.ManagementProgressEntity"
+            resultType="com.innon.education.management.progress.repository.dto.ManagementProgressDTO">
+        SELECT id
+             , title
+             , status
+             , edu_user_id
+             , year
+             , month
+             , edu_type
+             , plan_start_date
+             , plan_end_date
+             , approve_step
+             , work_num
+             , course_id
+             , duty_category
+             , document_id
+             , proceed_type
+             , evaluation_type
+             , completion_type
+             , progress_type
+             , valid_date
+             , relation_system
+             , relation_num
+             , passing_rate
+             , re_edu_cnt
+             , parent_id
+             , create_at
+          FROM tb_education_plan
+         WHERE 1=1
+         <if test="plan_id != null and plan_id > 0">
+           AND id = #{plan_id}
+         </if>
+         <if test="title != null and title != ''">
+           AND title = #{title}
+         </if>
+         <if test="work_num != null and work_num != ''">
+           AND work_num = #{work_num}
+         </if>
+    </select>
+
+    <!-- 교육대상 조회 -->
+    <select id="findEducationPlanUserList"
+            parameterType="int"
+            resultType="string">
+        SELECT qms_user_id
+          FROM tb_education_plan_user
+         WHERE plan_id = #{plan_id}
+        and delete_at != 'Y'
+    </select>
+
+    <!-- 참고 URL 조회 -->
+    <select id="findPlanContent"
+            parameterType="int"
+            resultType="string">
+        SELECT url_addr
+        FROM tb_education_plan_content
+        WHERE plan_id = #{planId}
+        and delete_at != 'Y'
+    </select>
+
+    <!-- 진행시 출석 데이터 등록 -->
+    <insert id="saveUserAttendance" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.management.progress.repository.entity.UserAttendanceEntity">
+        INSERT INTO tb_user_attendance (
+            attend_user_id,
+            attend_date,
+            plan_id,
+            flag
+        <if test="content_id != null and content_id > 0">
+            , content_id
+        </if>
+        ) VALUES (
+            #{attend_user_id},
+            getDate(),
+            #{plan_id},
+            #{flag}
+        <if test="content_id != null and content_id > 0">
+            , #{content_id}
+        </if>
+        )
+    </insert>
+
+    <!-- 교육대상 SEQ값 조회 -->
+    <select id="findEducationPlanUserByPlanIdAndUserId"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity"
+            resultType="com.innon.education.management.progress.repository.dto.EducationPlanUserDTO">
+        SELECT id
+             , plan_id
+             , qms_user_id
+             , status
+          FROM tb_education_plan_user
+         WHERE delete_at != 'Y'
+        <if test="plan_id != null and plan_id > 0">
+           AND plan_id = #{plan_id}
+        </if>
+        <if test="qms_user_id != null and qms_user_id != ''">
+           AND qms_user_id = #{qms_user_id}
+        </if>
+    </select>
+
+    <!-- 교육아이디 기준 교육내용 조회 -->
+    <select id="findEduContentInfo"
+            parameterType="com.innon.education.management.progress.repository.model.ManagementProgress"
+            resultType="com.innon.education.management.progress.repository.dto.PlanContentDTO">
+        SELECT id
+             , plan_id
+             , url_addr
+             , edu_contents
+             , seconds
+          FROM tb_education_plan_content
+        <where>
+            and delete_at != 'Y'
+           AND plan_id = #{plan_id}
+        </where>
+    </select>
+
+    <!-- 교육아이디 기준 교육계획 조회 -->
+    <select id="findEducationPlanById"
+            parameterType="int"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT id
+             , title
+             , status
+             , edu_user_id
+             , edu_type
+             , CONVERT(CHAR(10), plan_start_date, 23) AS plan_start_date
+             , CONVERT(CHAR(10), plan_end_date, 23) AS plan_end_date
+             , work_num
+             , document_id
+             , proceed_type
+             , evaluation_type
+             , dept_cd
+             , dept_nm
+             , state
+             , question_num
+          FROM tb_education_plan
+        <where>
+           AND id = #{id}
+        </where>
+    </select>
+
+    <select id="findUserAttendance"
+            parameterType="com.innon.education.management.progress.repository.entity.UserAttendanceEntity"
+            resultType="com.innon.education.management.progress.repository.dto.UserAttendanceDTO">
+
+        select attend_user_id, attend_date, plan_id,flag,content_id
+        from tb_user_attendance
+        <where>
+            <if test="content_id != null and content_id > 0">
+                and content_id = #{content_id}
+            </if>
+            <if test="attend_user_id != null and attend_user_id != '' ">
+                and attend_user_id = #{attend_user_id}
+            </if>
+        </where>
+
+    </select>
+
+</mapper>

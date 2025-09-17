@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.edu-current.mapper.edu-current-mapper">
+    <!-- 특정교육 결과 갯수 조회 -->
+    <select id="findEduResultByPlanId"
+            parameterType="int"
+            resultType="int">
+        SELECT COUNT(id)
+        FROM tb_education_result
+        WHERE plan_id = #{plan_id}
+    </select>
+
+    <!-- 특정교육 평가 갯수 조회 -->
+    <select id="findEduEvaluationByPlanId"
+            parameterType="int"
+            resultType="int">
+        SELECT COUNT(DISTINCT(tpqa.epu_id))
+        FROM tb_education_plan_user tepu
+                 INNER JOIN tb_pu_q_answer tpqa
+                            ON (tepu.id = tpqa.epu_id AND tpqa.status = 'S')
+        WHERE tepu.plan_id = #{plan_id}
+        and tepu.delete_at != 'Y'
+    </select>
+
+    <!-- 특정교육 진행 갯수 조회 -->
+    <select id="findEduProgressByPlanId"
+            parameterType="int"
+            resultType="int">
+        SELECT COUNT(tepu.id)
+        FROM tb_education_plan_user tepu
+                 INNER JOIN tb_user_attendance tua
+                            ON (tepu.id = tua.attend_user_id)
+        WHERE tepu.plan_id = #{plan_id}
+        and tepu.delete_at != 'Y'
+          AND tepu.id NOT IN (
+            SELECT DISTINCT(tpqa.epu_id)
+            FROM tb_pu_q_answer tpqa
+            WHERE tpqa.epu_id = tepu.id
+              AND tpqa.status = 'S'
+        )
+    </select>
+
+    <!-- 특정교육 계획 갯수 조회 -->
+    <select id="findEduPlanByPlanId"
+            parameterType="int"
+            resultType="int">
+        SELECT COUNT(tepu.id)
+        FROM tb_education_plan_user tepu
+        WHERE tepu.plan_id = #{plan_id}
+        and tepu.delete_at != 'Y'
+          AND tepu.id NOT IN (
+            SELECT tua.attend_user_id
+            FROM tb_user_attendance tua
+            WHERE tua.attend_user_id = tepu.id
+        )
+    </select>
+
+    <!-- 전체교육 계획 갯수 조회 -->
+    <select id="findAllEduPlan"
+    parameterType="hashMap"
+    resultType="int">
+        SELECT COUNT(id)
+          FROM tb_education_plan
+         WHERE 1=1
+        <if test="(search_start_date != null and search_start_date != '')
+        and (search_end_date != null and search_end_date != '')">
+           AND plan_start_date BETWEEN #{search_start_date} AND #{search_end_date}
+        </if>
+           AND approve_step = '1'
+    </select>
+
+    <!-- 전체교육 진행 갯수 조회 -->
+    <select id="findAllEduProgress"
+            parameterType="hashMap"
+            resultType="int">
+        SELECT COUNT(id)
+          FROM tb_education_plan
+         WHERE 1=1
+        <if test="(search_start_date != null and search_start_date != '')
+                    and (search_end_date != null and search_end_date != '')">
+           AND plan_start_date BETWEEN #{search_start_date} AND #{search_end_date}
+        </if>
+           AND approve_step = '2'
+    </select>
+
+    <!-- 전체교육 평가 갯수 조회 -->
+    <!-- 전체교육 결과 갯수 조회 -->
+
+    <!-- 수강생 기준 계획 조회 -->
+    <select id="findEduPlanByUserId"
+            parameterType="String"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+             , tep.title
+             , tep.status
+             , (SELECT discription FROM tb_code where code_name = tep.status AND delete_at != 'Y') AS status_nm
+             , tep.edu_user_id
+             , tep.year
+             , tep.month
+             , tep.edu_type
+             , (SELECT discription FROM tb_code where code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+             , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+             , tep.approve_step
+             , tep.work_num
+             , tep.course_id
+             , tep.duty_category
+             , tep.document_id
+             , tep.proceed_type
+             , (SELECT discription FROM tb_code where code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+             , tep.evaluation_type
+             , (SELECT discription FROM tb_code where code_name = tep.evaluation_type AND delete_at != 'Y') AS evaluation_type_nm
+             , tep.completion_type
+             , tep.progress_type
+        , (SELECT discription FROM tb_code where code_name = tep.progress_type AND delete_at != 'Y') AS progress_type_nm
+             , tep.valid_date
+             , tep.relation_system
+             , tep.relation_num
+             , tep.passing_rate
+             , tep.re_edu_cnt
+             , tep.parent_id
+             , tep.create_at
+             , tep.state
+             , tep.use_flag
+             , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+             , '교육대기' AS edu_status
+          FROM tb_education_plan_user tepu
+         INNER JOIN tb_education_plan tep
+            ON (tepu.plan_id = tep.id)
+         WHERE tepu.qms_user_id = #{qms_user_id}
+         and tepu.delete_at != 'Y'
+           AND tepu.plan_id NOT IN (
+               SELECT plan_id
+                 FROM tb_user_attendance
+                WHERE attend_user_id = #{qms_user_id}
+           )
+            and tep.use_flag = 'S'
+        AND CONVERT(CHAR(10), getDate(), 23) between  CONVERT(CHAR(10), tep.plan_start_date, 23) and CONVERT(CHAR(10), tep.plan_end_date, 23)
+
+    </select>
+
+    <!-- 수강생 기준 진행 조회 -->
+    <select id="findEduProgressByUserId"
+            parameterType="String"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+             , tep.title
+             , tep.status
+             , (SELECT discription FROM tb_code where code_name = tep.status AND delete_at != 'Y') AS status_nm
+             , tep.edu_user_id
+             , tep.year
+             , tep.month
+             , tep.edu_type
+             , (SELECT discription FROM tb_code where code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+             , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+             , tep.approve_step
+             , tep.work_num
+             , tep.course_id
+             , tep.duty_category
+             , tep.document_id
+             , tep.proceed_type
+             , (SELECT discription FROM tb_code where code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+             , tep.evaluation_type
+             , (SELECT discription FROM tb_code where code_name = tep.evaluation_type AND delete_at != 'Y') AS evaluation_type_nm
+             , tep.completion_type
+             , tep.progress_type
+             , tep.use_flag
+             , tep.valid_date
+             , tep.relation_system
+             , tep.relation_num
+        , tep.passing_rate
+             , tep.re_edu_cnt
+             , tep.parent_id
+             , tep.create_at
+             , tep.state
+             , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+             , IIF(
+                (SELECT COUNT(id)
+                   FROM tb_user_attendance
+                  WHERE attend_user_id = tepu.qms_user_id
+                    AND plan_id = tep.id
+                    AND flag = 'ing'
+                ) = 0,
+                '출석완료',
+                '진행중'
+               ) AS edu_status
+          FROM tb_education_plan_user tepu
+         INNER JOIN tb_education_plan tep
+            ON (tepu.plan_id = tep.id)
+         WHERE tepu.qms_user_id = #{qms_user_id}
+        and tepu.delete_at != 'Y'
+           AND tepu.plan_id IN (
+               SELECT plan_id
+                 FROM tb_user_attendance
+                WHERE attend_user_id = #{qms_user_id}
+           )
+        AND (select count(id) from tb_education_plan_content where plan_id = tep.id and delete_at != 'Y')
+
+             >   (select count(id) from tb_user_attendance where plan_id = tep.id and attend_user_id =tepu.qms_user_id  and flag = 'ing')
+    </select>
+
+    <!-- 수강생 기준 평가 조회 -->
+    <select id="findEduEvaluationByUserId"
+            parameterType="String"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+             , tep.title
+             , tepu.status AS user_status
+             , tep.status
+             , (SELECT discription FROM tb_code where code_name = tep.status AND delete_at != 'Y') AS status_nm
+             , tep.edu_user_id
+             , tep.year
+             , tep.month
+             , tep.edu_type
+             , (SELECT discription FROM tb_code where code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+             , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+             , tep.approve_step
+             , tep.work_num
+             , tep.course_id
+             , tep.duty_category
+             , tep.document_id
+             , tep.proceed_type
+             , (SELECT discription FROM tb_code where code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+             , tep.evaluation_type
+             , (SELECT discription FROM tb_code where code_name = tep.evaluation_type AND delete_at != 'Y') AS evaluation_type_nm
+             , tep.completion_type
+             , tep.progress_type
+             , tep.valid_date
+             , tep.relation_system
+             , tep.relation_num
+             , tep.passing_rate
+             , tep.re_edu_cnt
+             , tep.parent_id
+             , tep.create_at
+             , tep.state
+             , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+             , dbo.FN_GET_EDUUSER_EVALSTATUS(#{qms_user_id}, tep.id, tep.question_num) AS edu_status
+             , (
+                SELECT TOP 1 answer_cnt
+                  FROM tb_pu_q_answer
+                 WHERE question_info_id IN (
+                     select id
+                       from tb_question_info
+                      where plan_id = tep.id
+                        and delete_at != 'Y'
+                 )
+                   and epu_id = tepu.qms_user_id
+             ) AS answer_cnt
+             , tepu.pass_yn
+            <!--
+             , IIF(
+                (select count(id)
+                   from tb_pu_q_answer
+                  where question_info_id IN (select id from tb_question_info where plan_id = tep.id and delete_at != 'Y')
+                   and status != 'TEMP' and epu_id = #{qms_user_id}
+
+                ) = 0,
+                '평가대기',
+                IIF(
+                 (select count(id)
+                    from tb_pu_q_answer
+                   where question_info_id IN (select id from tb_question_info where plan_id = tep.id and delete_at != 'Y')
+                     and status != 'TEMP' and epu_id = #{qms_user_id}
+
+                 ) <![CDATA[<]]> (select count(id) from tb_question_info where plan_id = tep.id and delete_at != 'Y')
+                 , '평가중'
+                 , '평가완료')
+             ) AS edu_status
+             -->
+          FROM tb_education_plan_user tepu
+         INNER JOIN tb_education_plan tep
+            ON (tepu.plan_id = tep.id)
+         WHERE tepu.qms_user_id = #{qms_user_id}
+           and tepu.delete_at != 'Y'
+           AND tepu.plan_id IN (
+               SELECT plan_id
+                 FROM tb_user_attendance
+                WHERE attend_user_id = #{qms_user_id}
+           )
+           /* 수강생 교육 진행 여부 갯수가 교육 내용 여부의 갯수보다 크거나 같을 경우 */
+           /* 아마도 수강생이 교육을 다 들었는지 체크하기 위한 로직으로 판단됨 */
+           AND (
+            select count(id)
+              from tb_user_attendance
+             where attend_user_id = tepu.qms_user_id
+               and plan_id = tep.id
+               and flag = 'ing'
+           ) >= (
+             select count(id)
+               from tb_education_plan_content
+              where plan_id = tep.id
+                and delete_at != 'Y'
+           )
+           /* 수강생의 정답 갯수가 출제 문제수보다 작거나 같은 경우 */
+           and tep.question_num > (
+             select count(id)
+               from tb_pu_q_answer
+              where question_info_id IN (
+                select id
+                  from tb_question_info
+                 where plan_id = tep.id
+                   and delete_at != 'Y'
+              )
+                and grade_yn = 'Y'
+                and epu_id = tepu.qms_user_id
+           )
+        ORDER BY plan_start_date DESC, plan_end_date ASC;
+    </select>
+
+    <!-- 수강생 기준 결과 갯수 조회 -->
+    <select id="findEduResultByUserId"
+            parameterType="String"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+             , tep.title
+             , tep.status
+             , (SELECT discription FROM tb_code where code_name = tep.status AND delete_at != 'Y') AS status_nm
+             , tep.edu_user_id
+             , tep.year
+             , tep.month
+             , tep.edu_type
+             , (SELECT discription FROM tb_code where code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+             , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+             , tep.approve_step
+             , tep.work_num
+             , tep.course_id
+             , tep.duty_category
+             , tep.document_id
+             , tep.proceed_type
+             , (SELECT discription FROM tb_code where code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+             , tep.evaluation_type
+             , (SELECT discription FROM tb_code where code_name = tep.evaluation_type AND delete_at != 'Y') AS evaluation_type_nm
+             , tep.completion_type
+             , tep.progress_type
+             , tep.valid_date
+             , tep.relation_system
+             , tep.relation_num
+             , tep.passing_rate
+             , tep.use_flag
+             , tep.re_edu_cnt
+             , tep.parent_id
+             , tep.create_at
+             , tep.state
+             , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+             , '교육완료' AS edu_status
+          FROM tb_education_plan_user tepu
+         INNER JOIN tb_education_plan tep
+            ON (tepu.plan_id = tep.id)
+         WHERE tepu.qms_user_id = #{qms_user_id}
+           and tepu.delete_at != 'Y'
+           AND tepu.plan_id IN (
+               SELECT plan_id
+                 FROM tb_user_attendance
+                WHERE attend_user_id = #{qms_user_id}
+           )
+
+           /* 수강생 교육 진행 여부 갯수가 교육 내용 여부의 갯수보다 크거나 같을 경우 */
+           /* 아마도 수강생이 교육을 다 들었는지 체크하기 위한 로직으로 판단됨 */
+           AND (
+             select count(id)
+               from tb_user_attendance
+              where attend_user_id = tepu.qms_user_id
+                and plan_id = tep.id
+                and flag = 'ing'
+           ) >= (
+             select count(id)
+               from tb_education_plan_content
+              where plan_id = tep.id
+                and delete_at != 'Y'
+           )
+
+           /* 수강생의 정답 갯수출제 문제수보다 크거나 같은 경우 */
+           and (
+             select count(id)
+               from tb_pu_q_answer
+              where question_info_id IN (
+                select id
+                  from tb_question_info
+                 where plan_id = tep.id
+                   and delete_at != 'Y'
+              )
+                and grade_yn = 'Y'
+                and epu_id = tepu.qms_user_id
+           ) >= tep.question_num
+
+            <!--
+           AND (
+             select count(id)
+               from tb_pu_q_answer
+              where question_info_id IN (
+                select id
+                  from tb_question_info
+                 where plan_id = tep.id
+                   and epu_id = tepu.qms_user_id
+                   and delete_at != 'Y'
+              )
+           ) >= (
+             select count(id)
+               from tb_question_info
+              where plan_id = tep.id
+                and delete_at != 'Y'
+           )
+           -->
+
+    </select>
+
+    <!-- 교육자 기준 QMS 조회 -->
+    <select id="findEduQmsByEduUserId"
+            parameterType="String"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+                select tep.work_num, 'plan' edu_type, (select discription from tb_code where code_name = tep.edu_type) edu_type_nm, tep.title,
+                tep.id, (select discription from tb_code where code_name = tep.progress_type) progress_type_nm,
+                CONVERT(CHAR(10), tep.sys_reg_date, 23) AS sys_reg_date_str, tep.use_flag, tep.sys_reg_user_id, tep.edu_user_id,
+                CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date, CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date,
+                (SELECT discription FROM tb_code where code_name = tep.evaluation_type) AS evaluation_type_nm,
+                (SELECT discription FROM tb_code WHERE code_name = tep.proceed_type) AS proceed_type_nm
+                from tb_education_plan tep
+                where (tep.edu_user_id =  #{edu_user_id} or tep.sys_reg_user_id =  #{edu_user_id})
+                and (tep.use_flag = 'N' or tep.use_flag = 'W')
+                and  tep.delete_at !='Y'
+                union all
+                select '' work_num, 'annual' edu_type, (select discription from tb_code where code_name= tae.edu_type) edu_type_nm, tae.title,
+                tae.id, (select discription from tb_code where code_name = tae.progress_type) progress_type_nm,
+                CONVERT(CHAR(10), tae.sys_reg_date, 23) AS sys_reg_date_str, tae.use_flag, tae.sys_reg_user_id, tae.edu_user_id,
+                '' AS plan_start_date, '' AS plan_end_date,
+                (SELECT discription FROM tb_code where code_name = tae.evaluation_type) AS evaluation_type_nm,
+                (SELECT discription FROM tb_code WHERE code_name = tae.proceed_type) AS proceed_type_nm
+                from tb_annual_education tae
+                where (tae.edu_user_id =  #{edu_user_id} or tae.sys_reg_user_id =  #{edu_user_id})
+                and tae.use_flag = 'N'
+                and  tae.delete_at !='Y'
+    </select>
+
+    <!-- 교육 계획 수강생 전체 조회 -->
+    <select id="findEduCurrentUserList"
+            parameterType="String"
+            resultType="com.innon.education.educurrent.repository.dto.EduCurrentUserDTO">
+        SELECT DISTINCT(qms_user_id) as qms_user_id
+          FROM tb_education_plan_user
+         WHERE delete_at != 'Y'
+        <if test="qms_user_id != null and qms_user_id != ''">
+           AND qms_user_id LIKE CONCAT('%', #{qms_user_id}, '%')
+        </if>
+    </select>
+</mapper>

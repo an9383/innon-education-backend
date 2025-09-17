@@ -1,0 +1,668 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.sign-mapper">
+	<!-- 공지사항 등록 -->
+	<insert id="saveSign" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.Sign">
+		insert into tb_sign (
+			sign_category,
+			sign_category_type,
+			sign_category_type_nm,
+			title,
+			signform,
+			sys_reg_user_id,
+			sys_reg_date,
+			dept_cd,
+			delete_at,
+			use_flag,
+			group_id
+		) values (
+			#{sign_category},
+			#{sign_category_type},
+			#{sign_category_type_nm},
+			#{title},
+			#{signform},
+			#{sys_reg_user_id},
+			getDate(),
+			#{dept_cd},
+			'N',
+			'Y',
+			#{group_id}
+		)
+
+	</insert>
+	<insert id="saveSignUser" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.SignUser">
+		insert into tb_sign_user (
+			sign_type,
+			sys_reg_user_id,
+			sys_reg_date,
+			dept_cd,
+			sign_id,
+			user_id,
+			manager_id,
+			manager_nm,
+			delete_at
+		) values (
+			#{sign_type},
+			#{sys_reg_user_id},
+			getDate(),
+			#{dept_cd},
+			#{sign_id},
+			#{user_id},
+			#{manager_id},
+			#{manager_nm},
+			'N'
+		)
+
+	</insert>
+
+	<select id="findSignList"
+			parameterType="com.innon.education.admin.system.sign.repository.Sign"
+			resultType="com.innon.education.admin.system.sign.repository.SignDTO">
+		SELECT s.id
+			 , s.sign_category
+			 , (SELECT discription FROM tb_code WHERE code_name = s.sign_category AND delete_at != 'Y') AS sign_category_nm
+			 , s.sign_category_type
+			 , s.sign_category_type_nm
+			 , s.title
+			 , s.signform
+			 , (SELECT discription FROM tb_code WHERE code_name = s.signform AND delete_at != 'Y') AS signform_nm
+			 , s.sys_reg_user_id
+			 , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+			 , s.dept_cd
+			 , s.sys_reg_date
+			 , CONVERT(CHAR(10), s.sys_reg_date, 23) AS convert_reg_date
+			 , (SELECT COUNT(id) FROM tb_sign_user WHERE s.id = sign_id AND delete_at != 'Y') AS sign_user_cnt
+			 , s.group_id
+			 , (SELECT title FROM tb_group WHERE id = s.group_id) AS group_nm
+		  FROM tb_sign s
+		  LEFT JOIN edu_insa ei
+			ON (ei.user_id = s.sys_reg_user_id)
+		  LEFT JOIN edu_dept ed
+			ON (ed.dept_cd = ei.dept_cd)
+		 WHERE delete_at != 'Y'
+		<choose>
+			<when test="group_id != null and group_id > 0">
+				AND s.group_id = #{group_id}
+			</when>
+			<otherwise>
+				<if test="groupList != null and groupList.size != 0">
+					AND s.group_id IN
+					<foreach collection="groupList" item="group" separator="," open="(" close=")">
+						#{group.id}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		<if test="sign_category != null and sign_category != ''">
+		   AND s.sign_category = #{sign_category}
+		</if>
+		<if test="sign_category_type != null and sign_category_type != ''">
+		   AND (s.sign_category_type = #{sign_category_type} or s.sign_category_type is null or s.sign_category_type ='') <!-- 이수철 : 결재선에서 sign_category_type 선택 안한 것도 검색 -->
+		</if>
+		<if test="sign_category_type_nm != null and sign_category_type_nm != ''">
+		   AND s.sign_category_type_nm = #{sign_category_type_nm}
+		</if>
+		<if test="title != null and title != ''">
+		   AND s.title LIKE CONCAT('%', #{title}, '%')
+		</if>
+		<if test="signform != null and signform != ''">
+		   AND s.signform LIKE CONCAT('%', #{signform}, '%')
+		</if>
+		 <if test="group_id != null and group_id > 0">
+		   AND s.group_id = #{group_id}
+		 </if>
+		 <if test="use_flag != null and !use_flag.equals('\u0000')">
+		   AND s.use_flag = #{use_flag}
+		 </if>
+		<choose>
+			<when test="search_txt != null and search_txt != ''">
+				<choose>
+					<when test="search_type != null and search_type != ''">
+						AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+					</when>
+					<otherwise>
+						AND (s.title LIKE CONCAT('%', #{search_txt}, '%')
+						OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+						OR s.sign_category_type_nm LIKE CONCAT('%', #{search_txt}, '%'))
+					</otherwise>
+				</choose>
+			</when>
+		</choose>
+		order by s.sys_reg_date desc
+	</select>
+
+	<!-- 결제권자 조회 -->
+	<select id="findSignUserList"
+			resultType="com.innon.education.admin.system.sign.repository.SignUser"
+			parameterType="int">
+		SELECT tss.id
+			 , tss.sign_id
+			 , tss.user_id
+			 , (SELECT dept_nm FROM edu_dept ed WHERE dept_cd = tss.dept_cd) AS dept_nm
+			 , tss.manager_nm
+			 , tss.manager_id
+			 , tm.title
+			 , sign_type
+			 , discription
+			 , tss.sys_reg_user_id
+			 , tss.dept_cd
+			 , tss.sys_reg_date
+		  FROM tb_sign_user tss
+		  left join tb_manager tm on tss.manager_id = tm.id
+		<where>
+			AND tss.delete_at != 'Y'
+			<if test="sign_id != null and sign_id > 0">
+				AND sign_id = #{sign_id}
+			</if>
+		</where>
+	</select>
+
+	<select id="findSignById"
+			parameterType="int"
+			resultType="com.innon.education.admin.system.sign.repository.SignDTO">
+		SELECT s.id
+			 , s.sign_category
+			 , s.sign_category_type_nm
+			 , s.title
+			 , s.signform
+			 , s.sys_reg_user_id
+			 , (SELECT user_nm FROM edu_insa WHERE s.sys_reg_user_id = user_id) sys_reg_user_nm
+			 , s.dept_cd
+			 , s.sys_reg_date
+			 , CONVERT(CHAR(10), s.sys_reg_date, 23) AS convert_reg_date
+			 , (SELECT COUNT(id) FROM tb_sign_user WHERE s.id = sign_id AND delete_at != 'Y') AS sign_user_cnt
+		  FROM tb_sign s
+		 WHERE 1=1
+		<if test="id != null and id > 0">
+		   AND id = #{id}
+		</if>
+		 ORDER BY s.sys_reg_date DESC
+	</select>
+
+	<!-- 교육계획/문서대출 요청 결재 등록 -->
+	<insert id="savePlanSign" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSign">
+		INSERT INTO tb_plan_sign (
+			plan_id,
+			sign_id,
+			status,
+			sign_category,
+			title,
+			signform,
+			sys_reg_user_id,
+			dept_cd,
+			sys_reg_date,
+			delete_at,
+			sign_category_type,
+			group_id
+		)
+		SELECT TOP 1
+			  #{plan_id}
+			 , #{id}
+			 , #{status}
+			 , sign_category
+			 , title
+			 , signform
+			 , #{sys_reg_user_id}
+			 , #{dept_cd}
+			 , getDate()
+			 , 'N'
+			 , sign_category_type
+			 , group_id
+		  FROM tb_sign
+		 <where>
+			 <if test="id != null and id > 0">
+				AND id = #{id}
+			 </if>
+		 </where>
+	</insert>
+
+	<!-- 대출연장 요청 결재 등록 -->
+	<insert id="saveExtensionPlanSign" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSign">
+	INSERT INTO tb_plan_sign (
+		plan_id,
+		sign_id,
+		status,
+		sign_category,
+		title,
+		signform,
+		sys_reg_user_id,
+		dept_cd,
+		sys_reg_date,
+		delete_at,
+		sign_category_type,
+		group_id
+	) VALUES (
+		#{plan_id},
+
+	)
+	SELECT TOP 1 #{plan_id}
+		 , sign_id
+		 , #{status}
+		 , sign_category
+		 , '문서 연장신청'
+		 , #{signform}
+		 , #{sys_reg_user_id}
+		 , #{dept_cd}
+		 , getDate()
+		 , 'N'
+		 , sign_category_type
+		 , group_id
+	  FROM tb_plan_sign
+	<where>
+		AND signform = 'comi2s3'
+		<if test="plan_id != null and plan_id > 0">
+			AND plan_id = #{plan_id}
+		</if>
+		<if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+			AND sys_reg_user_id = #{sys_reg_user_id}
+		</if>
+	</where>
+	</insert>
+
+	<!-- 교육계획/문서대출 결재권자 등록 -->
+	<insert id="savePlanSignManager" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		INSERT INTO tb_plan_sign_manager (
+			plan_id,
+			user_id,
+			state,
+			sign_id,
+			sys_reg_user_id,
+			dept_cd,
+			order_num,
+			sign_type,
+			sign_category,
+			sys_reg_date,
+			manager_id,
+			sys_upd_reg_date,
+			group_id,
+			comment,
+			plan_sign_id
+		) VALUES (
+			#{plan_id},
+			#{user_id},
+			#{state},
+			#{sign_id},
+			#{sys_reg_user_id},
+			#{dept_cd},
+			#{order_num},
+			#{sign_type},
+			#{sign_category},
+			getDate(),
+			#{manager_id},
+			getDate(),
+			#{group_id},
+			#{comment},
+			#{plan_sign_id}
+		)
+	</insert>
+
+	<update id="updateSignApproveState"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		UPDATE tb_plan_sign_manager
+		   SET state = #{state}
+		<if test="comment != null and comment != ''">
+			 , comment = #{comment}
+		</if>
+		 WHERE id = #{id}
+	</update>
+
+	<!-- 상위 결재 유저 조회 -->
+	<select id="findTopApprover"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager"
+			resultType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		SELECT TOP 1 psm.id
+			 , psm.plan_id
+			 , (SELECT state FROM tb_education_plan WHERE id = psm.plan_id) AS edu_state
+			 , (SELECT status from tb_document_loan WHERE d_id = psm.plan_id and delete_at !='Y') AS doc_state
+			 , psm.user_id
+			 , psm.state
+			 , psm.sign_id
+			 , psm.comment
+			 , psm.order_num
+		  FROM tb_plan_sign_manager psm
+		 WHERE 1=1
+		<if test="plan_id != null and plan_id > 0">
+		   AND psm.plan_id = #{plan_id}
+		</if>
+		<if test="order_num != null">
+		   AND psm.order_num = #{order_num}
+		</if>
+		 ORDER BY psm.id DESC
+	</select>
+
+	<!-- 결재 유저 조회 -->
+	<select id="findApproverList"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager"
+			resultType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		SELECT psm.id
+			 , psm.plan_id
+			 , ep.title AS plan_title
+			 , s.title AS sign_title
+			 , s.signform
+			 , psm.user_id
+			 , (SELECT user_nm FROM edu_insa WHERE user_id = psm.user_id) AS user_nm
+			 , psm.state
+			 , (SELECT discription FROM tb_code WHERE code_name = psm.state) AS state_nm
+			 , psm.sign_id
+			 , psm.comment
+			 , psm.order_num
+			 , psm.sign_type
+			 , (SELECT discription FROM tb_code WHERE code_name = psm.sign_type) AS sign_type_nm
+			 , psm.manager_id
+			 , psm.sign_category
+			 , psm.plan_sign_id
+			 , psm.group_id
+			 , psm.sys_reg_user_id
+		FROM tb_plan_sign_manager psm
+			LEFT JOIN tb_sign s ON (psm.sign_id = s.id)
+			LEFT JOIN tb_education_plan ep ON (psm.plan_id = ep.id)
+			JOIN (
+					SELECT MAX(id) AS id
+					FROM tb_plan_sign
+					<where>
+						<if test="plan_id != null and plan_id > 0">
+						  AND plan_id = #{plan_id}
+						</if>
+						<if test="sign_category != null and sign_category != ''">
+						  AND sign_category = #{sign_category}
+						</if>
+						<if test="signform != null and signform != ''">
+						  AND signform = #{signform}
+						</if>
+					</where>
+				) ps
+			ON psm.plan_sign_id = ps.id
+		<where>
+			<if test="plan_id != null and plan_id > 0">
+			  AND plan_id = #{plan_id}
+			</if>
+			<if test="sign_category != null and sign_category != ''">
+			  AND psm.sign_category = #{sign_category}
+			</if>
+		</where>
+		ORDER BY order_num
+	</select>
+
+	<update id="updateSign"
+			parameterType="com.innon.education.admin.system.sign.repository.Sign">
+		UPDATE tb_sign
+		   SET title = #{title}
+			 , signform = #{signform}
+			 , sign_category = #{sign_category}
+			 , sign_category_type = #{sign_category_type}
+			 , sign_category_type_nm = #{sign_category_type_nm}
+			 , sys_upd_user_id = #{sys_reg_user_id}
+			 , sys_upd_reg_date = getDate()
+			 , group_id = #{group_id}
+		 WHERE id = #{id}
+	</update>
+
+	<update id="updateSignUser"
+			parameterType="com.innon.education.admin.system.sign.repository.SignUser">
+		UPDATE tb_sign_user
+		   SET sys_upd_reg_date = getDate()
+			 , sys_upd_user_id = #{sys_reg_user_id}
+			 <if test="sign_type != null and sign_type != ''">
+			 , sign_type = #{sign_type}
+			 </if>
+			 <if test="discription != null and discription !=''">
+			 , discription = #{discription}
+			 </if>
+			 <if test="manager_id != null and manager_id !=''">
+			 , manager_id = #{manager_id}
+			 </if>
+			 <if test="manager_nm != null and manager_nm !=''">
+			 , manager_nm = #{manager_nm}
+			 </if>
+		 WHERE id = #{id}
+	</update>
+
+	<update id="deleteSign"
+			parameterType="com.innon.education.admin.system.sign.repository.Sign">
+		UPDATE tb_sign
+		   SET delete_at = 'Y'
+			 , sys_upd_user_id = #{sys_reg_user_id}
+			 , sys_upd_reg_date = getDate()
+		 WHERE id = #{id}
+	</update>
+
+	<delete id="deleteSignUser"
+			parameterType="com.innon.education.admin.system.sign.repository.SignUser">
+		DELETE FROM tb_sign_user
+		WHERE sign_id = #{sign_id}
+	</delete>
+
+	<insert id="savePlanSignDetail" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignDetail">
+		INSERT INTO tb_plan_sign_detail (
+			plan_sign_id,
+			sign_manager_id,
+			state,
+			user_id,
+			comment,
+			sys_reg_date,
+			sys_reg_user_id
+		) VALUES (
+			#{plan_sign_id},
+			#{sign_manager_id},
+			#{state},
+			#{user_id},
+			#{comment},
+			getDate(),
+			#{sys_reg_user_id}
+		)
+	</insert>
+
+	<select id="planSignDetailList"
+			parameterType="com.innon.education.new_education.dto.New_SearchDTO"
+			resultType="com.innon.education.new_education.dto.CurrentSignDTO">
+		SELECT tpsd.id
+			 , tpsd.plan_sign_id
+			 , tpsd.state
+			 , tpsd.user_id
+			 , ei.user_nm + ' [' + ed.dept_nm + ']' AS user_nm
+			 , tpsd.comment
+			 , tpsd.sys_reg_date
+			 , CONVERT(CHAR(10), tpsd.sys_reg_date, 23) AS convert_reg_date
+			 , sys_reg_user_id
+			 , ei2.user_nm + ' [' + ed2.dept_nm + ']' AS sys_reg_user_nm
+		  FROM tb_plan_sign_detail tpsd
+		  LEFT JOIN tb_plan_sign_manager psm on psm.plan_sign_id = ps.id
+		  LEFT JOIN edu_insa ei
+			ON (ei.user_id = tpsd.user_id)
+		  LEFT JOIN edu_dept ed
+			ON (ed.dept_cd = ei.dept_cd)
+		  LEFT JOIN edu_insa ei2
+			ON (ei2.user_id = tpsd.sys_reg_user_id)
+		  LEFT JOIN edu_dept ed2
+			ON (ed2.dept_cd = ei2.dept_cd)
+		 <where>
+			 <if test="sign_category != null and sign_category != '' ">
+				 AND ps.sign_category = #{sign_category}
+			 </if>
+			 <if test="plan_id != null and plan_id >0 ">
+				 AND ps.plan_id = #{plan_id}
+			 </if>
+			 <if test="plan_sign_id != null and plan_sign_id > 0">
+				 AND psm.plan_sign_id = #{plan_sign_id}
+			 </if>
+		   AND plan_sign_id = #{plan_sign_id}
+		 </where>
+	</select>
+
+	<select id="findPlanSignManager"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager"
+			resultType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		SELECT psm.id
+			 , psm.plan_id
+			 , psm.manager_id
+			 , CASE WHEN psm.manager_id = 0 THEN psm.user_id
+					ELSE l_tmu.manager_user_id
+				END AS manager_user_id
+			 , CASE WHEN psm.manager_id = 0 THEN ei.user_nm
+					ELSE (select user_nm from edu_insa where user_id = l_tmu.manager_user_id)
+				END AS sign_user_nm
+			 , psm.user_id
+			 , ei.user_nm + ' [' + ed.dept_nm + ']' AS user_nm
+			 , psm.state
+			 , (SELECT discription FROM tb_code WHERE code_name = psm.state AND delete_at != 'Y') AS state_nm
+			 , psm.sign_id
+			 , psm.sys_reg_user_id
+			 , ei2.user_nm + ' [' + ed2.dept_nm + ']' AS sys_reg_user_nm
+			 , psm.dept_cd
+			 , psm.sys_reg_date
+			 , CONVERT(CHAR(10), psm.sys_reg_date, 23) AS convert_reg_date
+			 , psm.sign_type
+			 , (SELECT discription FROM tb_code WHERE code_name = psm.sign_type AND delete_at != 'Y') AS sign_type_nm
+			 , psm.sign_category
+			 , (SELECT discription FROM tb_code WHERE code_name = psm.sign_category AND delete_at != 'Y') AS sign_category_nm
+			 , psm.group_id
+			 , (SELECT title FROM tb_group where id = psm.group_id AND delete_at != 'Y') AS group_nm
+			 ,tm.memo as manager_nm
+		  FROM tb_plan_sign_manager psm
+		  LEFT JOIN edu_insa ei
+			ON (ei.user_id = psm.user_id)
+		  LEFT JOIN edu_dept ed
+			ON (ed.dept_cd = ei.dept_cd)
+		  LEFT JOIN edu_insa ei2
+			ON (ei2.user_id = psm.sys_reg_user_id)
+		  LEFT JOIN edu_dept ed2
+			ON (ei2.dept_cd = ed2.dept_cd)
+		  LEFT JOIN (
+				SELECT manager_user_id
+					 , manager_id
+				  FROM tb_manager_user mu
+				 WHERE mu.dept_cd IN
+				<foreach collection="deptList" item="dept" separator="," open="(" close=")">
+					#{dept.dept_cd}
+				</foreach>
+				   AND delete_at != 'Y'
+		  ) AS l_tmu
+			ON l_tmu.manager_id = psm.manager_id
+		left join tb_manager tm on tm.id =  psm.manager_id
+		<where>
+			<if test="sign_category != '' and sign_category != null ">
+				psm.sign_category = #{sign_category}
+			</if>
+
+			AND psm.plan_id = #{plan_id}
+		</where>
+	</select>
+
+	<update id="updatePlanSignManager"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		UPDATE tb_plan_sign_manager
+			<set>
+				<if test="user_id != null and user_id !='' ">
+					user_id = #{user_id},
+				</if>
+				<if test="state != null and state !='' ">
+					state = #{state},
+				</if>
+				<if test="comment != null  ">
+					comment = #{comment},
+				</if>
+				<if test="sign_type != null and sign_type !='' ">
+					sign_type = #{sign_type},
+				</if>
+				<if test="sys_upd_user_id != null and sys_upd_user_id !='' ">
+					sys_upd_user_id = #{sys_upd_user_id},
+				</if>
+				 sys_upd_reg_date = getDate(),
+			</set>
+		<where>
+			<if test="plan_id != null and plan_id !='' ">
+				and plan_id = #{plan_id}
+			</if>
+			<if test="manager_id != null and manager_id !='' ">
+				and manager_id = #{manager_id}
+			</if>
+			<if test="order_num != null and order_num !='' ">
+				and order_num = #{order_num}
+			</if>
+			<if test="plan_sign_id != null and plan_sign_id !='' ">
+				and plan_sign_id = #{plan_sign_id}
+			</if>
+			<if test="edu_state != null and edu_state !='' ">
+				and sign_type = #{edu_state}
+			</if>
+		</where>
+	</update>
+
+	<update id="updatePlanSign"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSign">
+		UPDATE tb_plan_sign
+		   SET status = #{status}
+			<if test="delete_at != null and delete_at != '' ">
+				delete_at = #{delete_at}
+			</if>
+			 , sys_upd_user_id = #{sys_upd_user_id}
+			 , sys_upd_reg_date = getDate()
+		 WHERE plan_id = #{plan_id}
+	</update>
+
+	<select id="findPlanSignState"
+			parameterType="int"
+			resultType="int">
+		SELECT COUNT(ps.id)
+		  FROM TB_PLAN_SIGN ps
+		  JOIN tb_plan_sign_manager psm
+			ON ps.id = psm.plan_sign_id
+		 WHERE psm.state = 'coms11004' --요청
+		   AND ps.sign_category = 'comc11002' -- 문서
+		   AND ps.plan_id = #{plan_id}
+	</select>
+
+	<select id="findPlanSign"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSign"
+			resultType="com.innon.education.admin.system.sign.repository.PlanSign">
+		SELECT TOP 1 
+			  id, plan_id, status, title, sign_category, signform, sys_reg_user_id, ei.user_nm, ed.dept_nm
+			, CONVERT(CHAR(19), ps.sys_reg_date, 20) AS convert_reg_date
+		FROM TB_PLAN_SIGN ps
+			LEFT join EDU_INSA ei on ei.user_id = ps.sys_reg_user_id
+			LEFT join EDU_DEPT ed on ed.dept_cd = ei.dept_cd
+		<where>
+			<if test="signform != null and signform != '' ">
+				and signform = #{signform}
+			</if>
+			<if test="plan_id != null and plan_id > 0  ">
+				and plan_id = #{plan_id}
+			</if>
+		</where>
+		ORDER BY ps.id DESC;
+	</select>
+
+	<select id="findPlanSignManagerExtensionRequest"
+			parameterType="com.innon.education.admin.system.sign.repository.PlanSignManager"
+			resultType="com.innon.education.admin.system.sign.repository.PlanSignManager">
+		SELECT su.id
+			, su.sign_id
+			, su.user_id
+			, (SELECT dept_nm FROM edu_dept ed WHERE dept_cd = su.dept_cd) AS dept_nm
+			, su.manager_nm
+			, su.manager_id
+			, m.title
+			, sign_type
+			, discription
+			, su.sys_reg_user_id
+			, su.dept_cd
+			, su.sys_reg_date
+		FROM tb_sign_user su
+		LEFT JOIN tb_manager m on su.manager_id = m.id
+		WHERE su.delete_at != 'Y'
+			AND su.sign_id = (SELECT TOP 1 id FROM tb_sign WHERE signform='comi2s3' AND group_id=#{group_id} AND delete_at!='Y') -- 연장신청
+		ORDER BY su.id ASC
+		;
+	</select>
+
+
+</mapper>

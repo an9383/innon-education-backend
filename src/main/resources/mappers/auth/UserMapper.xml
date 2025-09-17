@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- UserMapper.xml -->
+<mapper namespace="com.innon.education.auth.mapper.UserMapper" >
+    <select id="findUser"
+            resultType="com.innon.education.jwt.dto.CustomUserDetails"
+    parameterType="com.innon.education.auth.dto.request.LoginRequest">
+        <!-- 차후 필요 컬럼 명시 필요 -->
+        SELECT top 1
+          insa.*,
+          dept.dept_nm AS dept_nm,
+          grp.id AS group_id
+        FROM edu_insa insa
+          LEFT JOIN edu_dept dept
+            ON insa.dept_cd = dept.dept_cd
+          LEFT JOIN tb_group_dept grp_dept
+            ON dept.dept_cd = grp_dept.dept_cd and grp_dept.delete_at != 'Y'
+         LEFT JOIN tb_group grp
+            ON grp_dept.group_id = grp.id AND grp.delete_at != 'Y'
+        <where>
+          <if test="user_id !='' and user_id !=null ">
+              AND insa.user_id  = #{user_id}
+          </if>
+          <if test="email != null and email != ''">
+              AND insa.email = #{email};
+          </if>
+          <if test="refresh_token !='' and refresh_token !=null ">
+              AND insa.refresh_token  = #{refresh_token}
+          </if>
+        </where>
+
+    </select>
+
+</mapper>

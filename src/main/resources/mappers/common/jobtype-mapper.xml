@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.jobtype-mapper">
+    <insert id="saveJobType" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.jobtype.repository.JobType">
+        insert into tb_job_type (
+            title, memo, sys_reg_user_id, delete_at, group_id, sys_reg_date
+        ) values (
+            #{title}, #{memo}, #{sys_reg_user_id}, 'N', #{group_id}, getDate()
+        )
+
+    </insert>
+    <insert id="saveJobTypeDept" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.jobtype.repository.JobTypeDept">
+        insert into tb_job_type_dept (
+            dept_cd, job_type_id, delete_at, sys_reg_date, sys_reg_user_id
+        ) values (
+            #{dept_cd}, #{job_type_id}, 'N', getDate(), #{sys_reg_user_id}
+        )
+
+    </insert>
+
+    <select id="findJobTypeList"
+            parameterType="com.innon.education.admin.jobtype.repository.JobType"
+            resultType="com.innon.education.admin.jobtype.repository.JobTypeDTO">
+        SELECT tjt.id
+        , tjt.title
+        , tjt.memo
+        , tjt.sys_reg_user_id
+        , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+        , tjt.sys_reg_date
+        , tjt.group_id
+        , (SELECT title FROM tb_group WHERE id = tjt.group_id) AS group_nm
+        , CONVERT(CHAR(10), tjt.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_job_type_dept WHERE tjt.id = job_type_id and delete_at != 'Y') AS job_type_dept_cnt
+        FROM tb_job_type tjt
+        LEFT JOIN edu_insa ei
+        ON (ei.user_id = tjt.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+        WHERE tjt.delete_at != 'Y'
+        <if test="title != null and title != ''">
+            AND tjt.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="memo != null and memo != ''">
+            AND tjt.memo LIKE CONCAT('%', #{memo}, '%')
+        </if>
+        <if test="group_id != null and group_id > 0">
+            AND tjt.group_id = #{group_id}
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (tjt.title LIKE CONCAT('%', #{search_txt}, '%')
+                        OR tjt.memo LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        order by tjt.sys_reg_date desc
+    </select>
+
+    <!-- 결제권자 조회 -->
+    <select id="findJobTypeDeptList"
+            resultType="com.innon.education.admin.jobtype.repository.JobTypeDept"
+            parameterType="com.innon.education.admin.jobtype.repository.JobType">
+        SELECT tjtd.job_type_id,
+        tjtd.id
+        , tjt.title
+        , tjtd.dept_cd
+        , ed.dept_nm
+        , ed.dept_order
+        , ed.dept_level
+        , ed.PARENT_DEPT_CD
+        , (SELECT DEPT_NM FROM EDU_DEPT WHERE ed.PARENT_DEPT_CD = DEPT_CD) AS PARENT_DEPT_NM
+        FROM tb_job_type_dept tjtd
+        LEFT JOIN  tb_job_type tjt on tjt.id = tjtd.job_type_id
+        LEFT JOIN edu_dept ed on ed.dept_cd = tjtd.dept_cd
+        <where>
+            <if test="id != null and id > 0">
+                AND tjtd.job_type_id = #{id}
+            </if>
+            and tjt.delete_at != 'Y'
+            and tjtd.delete_at != 'Y'
+        </where>
+        order by tjt.title,tjtd.id
+    </select>
+
+    <select id="findJobTypeById"
+            parameterType="int"
+            resultType="com.innon.education.admin.jobtype.repository.JobTypeDTO">
+        SELECT tjt.id
+        , tjt.title
+        , tjt.memo
+        , tjt.sys_reg_user_id
+        , (SELECT user_nm FROM edu_insa WHERE tjt.sys_reg_user_id = user_id) sys_reg_user_nm
+        , tjt.sys_reg_date
+        , CONVERT(CHAR(10), tjt.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_job_type_dept WHERE tjt.id = group_id) AS job_type_dept_cnt
+        FROM tb_job_type tjt
+        WHERE 1=1
+        <if test="id != null and id > 0">
+            AND id = #{id}
+        </if>
+        ORDER BY tjt.sys_reg_date DESC
+    </select>
+
+    <select id="findJobTypeDeptByDeptCd"
+            parameterType="String"
+            resultType="com.innon.education.admin.jobtype.repository.JobTypeDept">
+        SELECT dept_cd
+        FROM tb_job_type_dept
+        WHERE group_id IN (
+            SELECT group_id
+            FROM tb_job_type_dept
+            WHERE dept_cd = #{dept_cd}
+        )
+    </select>
+
+    <update id="updateJobTypeUpdate"
+            parameterType="com.innon.education.admin.jobtype.repository.JobType">
+        UPDATE tb_job_type
+        SET title = #{title}
+        , memo = #{memo}
+        , sys_upd_user_id = #{sys_reg_user_id}
+        , sys_upd_reg_date = getDate()
+        <if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+        WHERE id = #{id}
+    </update>
+
+    <select id="updateJobTypeDept"
+            parameterType="com.innon.education.admin.jobtype.repository.JobTypeDept"
+            resultType="int">
+        UPDATE tb_job_type_dept
+        SET sys_upd_reg_date = getDate()
+          , sys_upd_user_id = #{sys_reg_user_id}
+          , delete_at = 'Y'
+        WHERE job_type_id = #{job_type_id}
+    </select>
+</mapper>

@@ -1,0 +1,1 @@
+import{_ as o}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{o as r,c}from"./index-DjZIgJnV.js";const e={};function a(t,n){return r(),c("div",null," fa dashboard ")}const f=o(e,[["render",a]]);export{f as default};

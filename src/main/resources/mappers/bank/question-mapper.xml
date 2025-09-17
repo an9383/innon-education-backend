@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.bank.mapper.question-mapper" >
+    <!-- 문제은행 등록 -->
+    <insert id="saveQuestionBank" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.bank.repository.model.QuestionBank">
+        INSERT INTO tb_qb (
+            group_id,
+            edu_type,
+            memo,
+            use_flag,
+            delete_at,
+            sys_reg_user_id,
+            sys_reg_date
+        ) VALUES (
+            #{group_id},
+            #{edu_type},
+            #{memo},
+            'Y',
+            'N',
+            #{sys_reg_user_id},
+            getDate()
+        )
+    </insert>
+
+    <!-- 문제은행 수정 -->
+    <update id="updateQuestionBank"
+            parameterType="com.innon.education.bank.repository.model.QuestionBank">
+        UPDATE tb_qb 
+        SET group_id = #{group_id},
+            edu_type = #{edu_type},
+            memo = #{memo},
+            use_flag = #{use_flag},
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 문제은행 삭제 -->
+    <update id="deleteQuestionBank"
+            parameterType="com.innon.education.bank.repository.model.QuestionBank">
+        UPDATE tb_qb 
+        SET delete_at = 'Y',
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 문제은행 조회 -->
+    <select id="findQuestionBankList"
+            parameterType="com.innon.education.bank.repository.model.QuestionBank"
+            resultType="com.innon.education.bank.repository.dto.QuestionBankDTO">
+        SELECT tq.id
+             , tq.group_id
+             , (SELECT title FROM tb_group WHERE id = tq.group_id) AS group_nm
+             , tq.edu_type
+             , (SELECT discription FROM tb_code WHERE code_name = tq.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , tq.memo
+             , (SELECT isnull(count(*), 0) FROM tb_qb_question WHERE qb_id = tq.id AND delete_at != 'Y') AS question_cnt
+             , tq.use_flag
+             , IIF(tq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , tq.delete_at
+             , tq.sys_reg_user_id
+             , ei.user_nm AS sys_reg_user_nm
+             , tq.sys_reg_date
+             , CONVERT(CHAR(10), tq.sys_reg_date, 23) AS convert_reg_date
+          FROM tb_qb tq
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tq.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+        <where>
+           AND tq.delete_at != 'Y'
+          <if test="group_id != null and group_id > 0">
+           AND tq.group_id = #{group_id}
+          </if>
+          <if test="edu_type != null and edu_type != ''">
+           AND tq.edu_type = #{edu_type}
+          </if>
+          <if test="use_flag != null and !use_flag.equals('\u0000')">
+           AND tq.use_flag = #{use_flag}
+          </if>
+          <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (tq.memo LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+          </choose>
+        </where>
+         ORDER BY tq.sys_reg_date DESC
+    </select>
+
+    <!-- 문제은행 문제 등록 -->
+    <insert id="saveQbQuestion" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.bank.repository.model.QbQuestion">
+        INSERT INTO tb_qb_question (
+            qb_id,
+            title,
+            essential,
+            question_type,
+            grade,
+            explanation,
+            edu_type,
+            use_flag,
+            delete_at,
+            sys_reg_user_id,
+            sys_reg_date
+        ) VALUES (
+            #{qb_id},
+            #{title},
+            #{essential},
+            #{question_type},
+            #{grade},
+            #{explanation},
+            #{edu_type},
+            #{use_flag},
+            'N',
+            #{sys_reg_user_id},
+            getDate()
+        )
+    </insert>
+
+    <!-- 문제은행 문제 삭제 -->
+    <update id="deleteQbQuestion"
+            parameterType="com.innon.education.bank.repository.model.QbQuestion">
+        UPDATE tb_qb_question
+        <set>
+
+            <if test="title != null and title != ''">title =#{title},</if>
+            <if test="essential != null and essential != ''">essential =#{essential},</if>
+            <if test="question_type != null and question_type != ''">question_type =#{question_type},</if>
+            <if test="grade != null and grade != ''">grade =#{grade},</if>
+            <if test="explanation != null and explanation != ''">explanation =#{explanation},</if>
+            <if test="edu_type != null and edu_type != ''">edu_type =#{edu_type},</if>
+            <if test="delete_at != null and delete_at != ''">delete_at = #{delete_at},</if>
+            <if test="use_flag != null and use_flag != ''">use_flag = #{use_flag},</if>
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        </set>
+        WHERE id = #{id};
+
+    </update>
+
+    <!-- 문제은행 문제 조회 -->
+    <select id="findQbQuestionList"
+            parameterType="com.innon.education.bank.repository.model.QbQuestion"
+            resultType="com.innon.education.bank.repository.model.QbQuestion">
+        SELECT id
+             , qb_id
+             , title
+             , essential
+             , question_type
+             , (SELECT discription FROM tb_code WHERE code_name = tqq.question_type AND delete_at != 'Y') AS question_type_nm
+             , grade
+             , (SELECT discription FROM tb_code WHERE code_name = tqq.grade AND delete_at != 'Y') AS grade_nm
+             , explanation
+             , use_flag
+        , IIF(tqq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , delete_at
+             , sys_reg_user_id
+             , (SELECT user_nm FROM edu_insa WHERE user_id = tqq.sys_reg_user_id) AS sys_reg_user_nm
+             , sys_reg_date
+             , CONVERT(CHAR(10), tqq.sys_reg_date, 23) AS convert_reg_date
+          FROM tb_qb_question tqq
+        <where>
+           AND delete_at != 'Y'
+          <if test="qb_id != null and qb_id > 0">
+           AND qb_id = #{qb_id}
+          </if>
+            <if test="use_flag != null and use_flag != '' ">
+                AND use_flag = #{use_flag}
+            </if>
+        </where>
+         ORDER BY tqq.sys_reg_date DESC
+    </select>
+
+    <!-- 문제은행 문항 등록 -->
+    <insert id="saveQbQItem" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.bank.repository.model.QbQItem">
+        INSERT INTO tb_qb_q_item (
+            qb_q_id,
+            item_name,
+            correct_answer,
+            order_num,
+            use_flag,
+            delete_at,
+            sys_reg_user_id,
+            sys_reg_date
+        ) VALUES (
+            #{qb_q_id},
+            #{item_name},
+            #{correct_answer},
+            #{order_num},
+            'Y',
+            'N',
+            #{sys_reg_user_id},
+            getDate()
+        )
+    </insert>
+
+    <!-- 문제은행 문항 수정 -->
+    <update id="updateQbQItem" 
+            parameterType="com.innon.education.bank.repository.model.QbQItem">
+        UPDATE tb_qb_q_item
+            SET item_name =#{item_name}
+                ,correct_answer =#{correct_answer}
+                ,question_type =#{question_type}
+                ,order_num =#{order_num}
+                ,use_flag =#{use_flag}
+                ,delete_at =#{delete_at}
+                ,sys_upd_user_id = #{sys_reg_user_id}
+                ,sys_upd_reg_date = getDate()
+        WHERE qb_q_id = #{qb_q_id};
+    </update>
+    
+    <!-- 문제은행 문항 삭제 -->
+    <delete id="deleteQbQItemList"
+            parameterType="int">
+        DELETE FROM tb_qb_q_item WHERE qb_q_id = #{qb_q_id}
+    </delete>
+
+    <!-- 문제은행 문항 조회 -->
+    <select id="findQbQItemList"
+            parameterType="int"
+            resultType="com.innon.education.bank.repository.model.QbQItem">
+        SELECT tqqi.id
+             , tqqi.qb_q_id
+             , tqqi.item_name
+             , tqqi.correct_answer
+             , tqqi.order_num
+             , tqqi.use_flag
+             , tqqi.delete_at
+             , sys_reg_user_id
+             , (SELECT user_nm FROM edu_insa WHERE user_id = tqqi.sys_reg_user_id) AS sys_reg_user_nm
+             , tqqi.sys_reg_date
+             , CONVERT(CHAR(10), tqqi.sys_reg_date, 23) AS convert_reg_date
+          FROM tb_qb_q_item tqqi
+        <where>
+           AND tqqi.delete_at != 'Y'
+            AND tqqi.use_flag ='Y'
+          <if test="qb_q_id != null and qb_q_id > 0">
+           AND qb_q_id = #{qb_q_id}
+          </if>
+        </where>
+    </select>
+</mapper>

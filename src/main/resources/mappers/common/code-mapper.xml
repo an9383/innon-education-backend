@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.common.mapper.code-mapper">
+    <!-- 공통코드 조회 -->
+    <select id="findCodeList"
+            parameterType="com.innon.education.common.repository.model.Code"
+            resultType="com.innon.education.common.repository.dto.CodeDTO">
+        SELECT tc.id
+             , tc.code_name
+             , tc.discription
+             , tc.parent_code
+             , tc.short_name
+             , CONVERT(VARCHAR(500), tc.discription) AS NM_PATH
+             , CONVERT(VARCHAR(500), tc.code_name) AS CD_PATH
+             , tc.depth_level
+             , tc.order_num
+             , tc.use_flag
+             , IIF(tc.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , tc.delete_at
+             , tc.sys_reg_date
+             , CONVERT(CHAR(10), tc.sys_reg_date, 23) AS convert_reg_date
+             , tc.sys_reg_user_id
+             , IIF(tc.sys_reg_user_id IS NULL, 'system', ei.user_nm + ' [' + ed.dept_nm + ']') AS sys_reg_user_nm
+          FROM tb_code tc
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tc.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND delete_at != 'Y'
+            <if test="code_name != null and code_name != ''">
+                AND tc.code_name = #{code_name}
+            </if>
+            <if test="parent_code != null and parent_code != ''">
+                AND tc.parent_code = #{parent_code}
+            </if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">
+                AND tc.use_flag = #{use_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (tc.code_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tc.discription LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tc.short_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ORDER BY depth_level, order_num
+    </select>
+
+    <!-- 공통코드 등록 -->
+    <insert id="saveCode" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.common.repository.model.Code">
+        INSERT INTO tb_code (
+            discription,
+            code_name,
+            order_num,
+            short_name,
+            parent_code,
+            use_flag,
+            delete_at,
+            depth_level,
+            sys_reg_date,
+            sys_reg_user_id
+        ) VALUES (
+            #{discription},
+            #{code_name},
+            #{order_num},
+            #{short_name},
+            #{parent_code},
+            #{use_flag},
+            'N',
+            #{depth_level},
+            getDate(),
+            #{sys_reg_user_id}
+        )
+    </insert>
+
+    <!-- 공통코드 수정 -->
+    <update id="updateCode"
+            parameterType="com.innon.education.common.repository.model.Code">
+        UPDATE tb_code
+           SET discription = #{discription}
+             , use_flag = #{use_flag}
+             , short_name = #{short_name}
+             , sys_upd_user_id = #{sys_upd_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 공통코드 삭제 처리 -->
+    <update id="deleteCode"
+            parameterType="com.innon.education.common.repository.model.Code">
+        UPDATE tb_code
+           SET delete_at = 'Y'
+         WHERE id = #{id}
+    </update>
+
+    <!-- 공통코드 단건 조회 -->
+    <select id="findByCodeName"
+            resultType="com.innon.education.common.repository.dto.CodeDTO"
+            parameterType="string">
+        SELECT top 1 id
+             , code_name
+             , discription
+             , parent_code
+             , short_name
+             , depth_level
+             , order_num
+             , use_flag
+          FROM tb_code
+        <where>
+        <if test="code_name != null and code_name != ''">
+           AND code_name = #{code_name}
+        </if>
+            AND delete_at ='N'
+            AND use_flag = 'Y'
+        </where>
+    </select>
+</mapper>

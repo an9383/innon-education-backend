@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.library.location.mapper.location-mapper">
+    <!-- 문서 위치코드 등록 -->
+    <insert id="saveLocationCode" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.library.location.repository.model.Location">
+        INSERT INTO tb_location (
+            sys_reg_user_id,
+            parent_code,
+            location_name,
+            location_code,
+            order_num,
+            short_name,
+            use_flag,
+            depth_level,
+            sys_reg_date,
+            delete_at,
+            group_id
+        ) VALUES (
+            #{sys_reg_user_id},
+            #{parent_code},
+            #{location_name},
+            #{location_code},
+            #{order_num},
+            #{short_name},
+            'Y',
+            #{depth_level},
+            getDate(),
+            'N',
+            #{group_id}
+         )
+    </insert>
+    <select id="saveExcelLocationCode"
+            parameterType="com.innon.education.library.location.repository.entity.LocationEntity"
+            resultType="hashMap">
+        DECLARE @id INT, @status VARCHAR(20)
+        IF NOT EXISTS (
+            SELECT id
+              FROM tb_location
+             WHERE 1=1
+             <if test="location_code != null and location_code != ''">
+               AND location_code = #{location_code}
+             </if>
+             <if test="location_name != null and location_name != ''">
+               AND location_name = #{location_name}
+             </if>
+        )
+        BEGIN
+            INSERT INTO tb_location (
+                sys_reg_user_id,
+                parent_code,
+                location_name,
+                location_code,
+                order_num,
+                group_id,
+                short_name,
+                use_flag,
+                depth_level,
+                sys_reg_date,
+                delete_at
+            ) VALUES (
+                #{reg_user_id},
+                #{parent_code},
+                #{location_name},
+                #{location_code},
+                #{order_num},
+                #{group_id},
+                #{short_name},
+                #{use_flag},
+                #{depth_level},
+                getDate(),
+                #{delete_at}
+            )
+            SELECT @id = SCOPE_IDENTITY(), @status = 'INSERT'
+        END
+        ELSE
+        BEGIN
+            SELECT @id = id
+                 , @status = 'SELECT'
+              FROM tb_location
+             WHERE 1=1
+             <if test="location_code != null and location_code != ''">
+               AND location_code = #{location_code}
+             </if>
+             <if test="location_name != null and location_name != ''">
+               AND location_name = #{location_name}
+             </if>
+        END
+        SELECT @id AS id, @status AS status
+    </select>
+
+    <!-- 위치코드 조회 -->
+    <select id="findLocationList"
+            parameterType="com.innon.education.library.location.repository.model.Location"
+            resultType="com.innon.education.library.location.repository.dto.LocationDTO">
+        SELECT tl.id
+        , tl.sys_reg_user_id
+        , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+        , tl.location_name
+        , tl.location_code
+        , tl.parent_code
+        , CONVERT(VARCHAR(500), tl.location_name) AS NM_PATH
+        , CONVERT(VARCHAR(500), tl.location_code) AS CD_PATH
+        , tl.depth_level
+        , tl.order_num
+        , tl.use_flag
+        , IIF(tl.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+        , tl.sys_reg_date
+        , tl.sys_upd_user_id
+        , tl.sys_upd_reg_date
+        , tl.delete_at
+        , tl.short_name
+        , tl.group_id
+        , (SELECT title FROM tb_group WHERE id = tl.group_id) AS group_nm
+        FROM tb_location tl WITH(NOLOCK)
+        LEFT JOIN edu_insa ei
+        ON (ei.user_id = tl.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND tl.delete_at != 'Y'
+            <choose>
+                <when test="group_id != null and group_id > 0">
+                    AND tl.group_id = #{group_id}
+                </when>
+                <otherwise>
+                    <if test="groupList != null and groupList.size != 0">
+                        AND tl.group_id IN
+                        <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                            #{group.id}
+                        </foreach>
+                    </if>
+                </otherwise>
+            </choose>
+            <if test="location_code != null and location_code != ''">
+                AND tl.location_code #{location_code}
+            </if>
+            <if test="parent_code != null and parent_code != ''">
+                AND tl.parent_code = #{parent_code}
+            </if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">
+                AND tl.use_flag = #{use_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (tl.location_code LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tl.location_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tl.short_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ORDER BY depth_level, order_num
+    </select>
+
+    <!-- 위치코드 수정 todo 정주원 error  code와 replace code 위치가 위치가 변경 되어 있음.. 수정완료-->
+    <update id="updateLocationCode"
+            parameterType="com.innon.education.library.location.repository.model.Location">
+        UPDATE tb_location
+           SET location_name = #{location_name}
+           <if test="use_flag != null and !use_flag.equals('\u0000')">
+             , use_flag = #{use_flag}
+           </if>
+             , sys_upd_user_id = #{sys_reg_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE id = #{id}
+    </update>
+    <update id="updateLocationCodeList"
+            parameterType="com.innon.education.library.location.repository.entity.LocationEntity">
+        UPDATE tb_location
+           SET location_code = REPLACE(location_code, #{replace_location_code}, #{location_code})
+             , parent_code = REPLACE(parent_code, #{replace_location_code}, #{location_code})
+         WHERE location_code LIKE #{location_code} + '%'
+           AND depth_level >= #{depth_level}
+    </update>
+
+    <!-- 수정을 위한 위치코드 조회 -->
+    <select id="findLocationCodeById"
+            parameterType="int"
+            resultType="string">
+        SELECT location_code
+          FROM tb_location
+         WHERE id = #{id}
+    </select>
+
+    <!-- 코드이름 기반 위치정보 조회 -->
+    <select id="findLocationCodeByCode"
+            parameterType="string"
+            resultType="com.innon.education.library.location.repository.dto.LocationDTO">
+        SELECT id
+             , sys_reg_user_id
+             , parent_code
+             , location_name
+             , location_code
+             , order_num
+             , group_id
+             , short_name
+             , use_flag
+             , depth_level
+             , sys_reg_date
+             , CONVERT(CHAR(10), sys_reg_date, 23) AS convert_reg_date
+             , sys_upd_user_id
+             , sys_upd_reg_date
+          FROM tb_location
+         WHERE 1=1
+        <if test="location_code != null and location_code != ''">
+           AND location_code = #{location_code}
+        </if>
+    </select>
+
+    <!-- 위치코드 삭제 처리 -->
+    <update id="deleteLocationCode"
+            parameterType="com.innon.education.library.location.repository.model.Location">
+        UPDATE tb_location
+           SET delete_at = 'Y'
+             , sys_upd_user_id = #{sys_reg_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE id = #{id}
+    </update>
+    <update id="deleteLocationCodeList"
+            parameterType="com.innon.education.library.location.repository.entity.LocationEntity">
+        UPDATE tb_location
+           SET delete_at = 'Y'
+         WHERE location_code LIKE #{location_code} + '%'
+           AND depth_level >= #{depth_level}
+    </update>
+
+    <!-- 개발과정에서 TB_LOCATION 데이터 삭제를 위한 쿼리 -->
+    <delete id="deleteTrashLocation">
+        DELETE FROM tb_location
+    </delete>
+
+    <select id="locationFullPath"
+            resultType="String"
+            parameterType="String">
+
+        select dbo.FN_TAR_LOCATION_NAME(#{code},'','>' )
+
+    </select>
+</mapper>

@@ -1,0 +1,783 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.annual.mapper.plan-mapper">
+    <!-- 연간교육 계획 등록 -->
+
+    <insert id="saveAnnualPlan" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity">
+        INSERT INTO tb_annual_education (
+            title
+        <if test="edu_type != null and edu_type != ''">
+          , edu_type
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+          , dept_cd
+        </if>
+        <if test="edu_user_id != null and edu_user_id != ''">
+            , edu_user_id
+        </if>
+        <if test="completion_month != null and completion_month > 0">
+          , completion_month
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+          , proceed_type
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+          , evaluation_type
+        </if>
+        <if test="plan_type != null and plan_type != ''">
+          , plan_type
+        </if>
+        <if test="edu_status != null and edu_status != ''">
+          , edu_status
+        </if>
+        <if test="edu_num != null and edu_num != ''">
+          , edu_num
+        </if>
+
+        <if test="edu_goal != null and edu_goal != ''">
+          , edu_goal
+        </if>
+        <if test="edu_coverage != null and edu_coverage != ''">
+          , edu_coverage
+        </if>
+        <if test="res_role != null and res_role != ''">
+          , res_role
+        </if>
+        <if test="edu_year != null and edu_year != ''">
+          , edu_year
+        </if>
+
+        <if test="progress_type != null and progress_type != ''">
+            ,progress_type
+        </if>
+        <if test="version != null and version != ''">
+            ,version
+        </if>
+          , group_id
+          , sys_reg_date
+          , sys_reg_user_id
+          , use_flag
+          , delete_at
+        ) VALUES (
+            #{title}
+        <if test="edu_type != null and edu_type != ''">
+          , #{edu_type}
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+          , #{dept_cd}
+        </if>
+        <if test="edu_user_id != null and edu_user_id != ''">
+            , #{edu_user_id}
+        </if>
+        <if test="completion_month != null and completion_month > 0">
+          , #{completion_month}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+          , #{proceed_type}
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+          , #{evaluation_type}
+        </if>
+        <if test="plan_type != null and plan_type != ''">
+          , #{plan_type}
+        </if>
+        <if test="edu_status != null and edu_status != ''">
+          , #{edu_status}
+        </if>
+        <if test="edu_num != null and edu_num != ''">
+          , #{edu_num}
+        </if>
+
+        <if test="edu_goal != null and edu_goal != ''">
+          , #{edu_goal}
+        </if>
+        <if test="edu_coverage != null and edu_coverage != ''">
+          , #{edu_coverage}
+        </if>
+        <if test="res_role != null and res_role != ''">
+          , #{res_role}
+        </if>
+        <if test="edu_year != null and edu_year != ''">
+          , #{edu_year}
+        </if>
+        <if test="progress_type != null and progress_type != ''">
+            ,#{progress_type}
+        </if>
+        <if test="version != null">
+            ,#{version}
+        </if>
+          , #{group_id}
+          , getDate()
+          , #{sys_reg_user_id}
+          , #{use_flag}
+          , 'N'
+        )
+    </insert>
+
+    <!-- 교육계획 승인상태 변경 -->
+    <update id="updateAnnualPlan"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity">
+        UPDATE tb_annual_education
+        <set>
+            <if test="proceed_type != null and proceed_type != ''">
+                proceed_type = #{proceed_type},
+            </if>
+            <if test="progress_type != null and progress_type != ''">
+                progress_type = #{progress_type},
+            </if>
+
+            <if test="use_flag != null and use_flag != ''">
+                use_flag = #{use_flag},
+            </if>
+            <if test="edu_goal != null and edu_goal != ''">
+                edu_goal = #{edu_goal},
+            </if>
+            <if test="edu_coverage != null and edu_coverage != ''">
+                edu_coverage = #{edu_coverage},
+            </if>
+            <if test="res_role != null and res_role != ''">
+                res_role = #{res_role},
+            </if>
+            <if test="delete_at != null and delete_at != ''">
+                delete_at = #{delete_at},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 연간교육 계획 조회 -->
+    <select id="annualEducationPlanList"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.AnnualPlanDTO">
+        SELECT tae.id
+        , tep.edu_type
+        , (SELECT discription FROM tb_code WHERE tep.edu_type = code_name) AS edu_type_nm
+        , tep.status
+        , (SELECT discription FROM tb_code WHERE tep.status = code_name) AS status_nm
+        , tae.dept_cd
+        , tae.completion_month
+        , tep.proceed_type
+        , tep.edu_user_id
+        , (SELECT user_nm FROM edu_insa ei WHERE ei.user_id = tep.edu_user_id) AS edu_user_nm
+        , ' [' + ed.dept_nm +']' +  ei.user_nm  AS sys_reg_user_nm
+        , (SELECT discription FROM tb_code WHERE tep.proceed_type = code_name) AS proceed_type_nm
+        , (SELECT discription FROM tb_code WHERE tep.progress_type = code_name) AS progress_type_nm
+        , (SELECT discription FROM tb_code WHERE tae.progress_type = code_name) AS annual_progress_type_nm
+        , tep.evaluation_type
+        , (SELECT discription FROM tb_code WHERE tep.evaluation_type = code_name) AS evaluation_type_nm
+        , tae.plan_type
+        , tae.edu_status
+        , tae.group_id
+        , tep.title
+        , tae.edu_num
+        , tae.document_num
+        , tae.sys_reg_user_id
+        , tep.month
+        , tep.plan_start_date
+        , tep.proceed_type
+        , tae.progress_type
+        , tep.evaluation_type
+        , tae.edu_goal
+        , tae.edu_coverage
+        , tae.res_role
+        , tae.edu_year
+        , tg.title group_nm
+        , tep.sys_reg_user_id
+        , tep.dept_cd
+        , tep.dept_nm
+        , ei.user_nm
+        ,tep.id plan_id
+        , tae.use_flag
+        , CONVERT(CHAR(10), tep.plan_start_date, 23) plan_start_date
+        , CONVERT(CHAR(10), tep.plan_end_date, 23) plan_end_date
+        , tep.use_flag plan_use_flag
+        FROM tb_annual_education tae
+        left join tb_group tg on tg.id = tae.group_id
+        left join tb_annual_plan tap on tap.annual_edu_id = tae.id
+        left join tb_education_plan tep on tep.id = tap.plan_id
+        left join edu_insa ei on tae.sys_reg_user_id = ei.user_id
+        left join edu_dept ed on ei.dept_cd = ed.dept_cd
+        WHERE tep.delete_at !='Y'
+        <if test="edu_type != null and edu_type != ''">
+            AND tae.edu_type = #{edu_type}
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+            AND tae.dept_cd = #{dept_cd}
+        </if>
+        <if test="completion_month != null and completion_month > 0">
+            AND tae.completion_month = #{completion_month}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+            AND tae.proceed_type = #{proceed_type}
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            AND tae.evaluation_type = #{evaluation_type}
+        </if>
+        <if test="plan_type != null and plan_type != ''">
+            AND tae.plan_type = #{plan_type}
+        </if>
+        <if test="edu_status != null and edu_status != ''">
+            AND tae.edu_status = #{edu_status}
+        </if>
+
+        <if test="title != null and title != ''">
+            AND tae.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="edu_num != null and edu_num != ''">
+            AND tae.edu_num LIKE CONCAT('%', #{edu_num}, '%')
+        </if>
+        <if test="document_num != null and document_num != ''">
+            AND tae.document_num LIKE CONCAT('%', #{document_num}, '%')
+        </if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+            AND tae.sys_reg_user_id = #{sys_reg_user_id}
+        </if>
+        <if test="edu_goal != null and edu_goal != ''">
+            AND tae.edu_goal = #{edu_goal}
+        </if>
+        <if test="edu_coverage != null and edu_coverage != ''">
+            AND tae.edu_coverage = #{edu_coverage}
+        </if>
+        <if test="res_role != null and res_role != ''">
+            AND tae.res_role = #{res_role}
+        </if>
+        <if test="edu_year != null and edu_year > 0">
+            AND tae.edu_year = #{edu_year}
+        </if>
+        <if test="id != null and id > 0">
+            AND tae.id = #{id}
+        </if>
+        <if test="use_flag != null and use_flag != ''">
+            <choose>
+                <when test="use_flag == 'I' ">
+                    AND tae.use_flag != 'C'
+                </when>
+                <otherwise>
+                    AND tae.use_flag = #{use_flag}
+                </otherwise>
+            </choose>
+
+        </if>
+        <if test="dept_list != null and dept_list.size > 0">
+            AND tae.dept_cd IN
+            <foreach collection="dept_list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="group_id != null and group_id > 0">
+                AND tae.group_id = #{group_id}
+            </when>
+            <otherwise>
+                <if test="groupList != null and groupList.size != 0">
+                    AND tae.group_id IN
+                    <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                        #{group.id}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+
+        ORDER BY tae.edu_type , tae.id desc
+
+    </select>
+
+    <!-- 연간교육 계획 조회 -->
+    <select id="annualList"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.AnnualPlanDTO">
+
+
+
+    </select>
+
+    <!-- 연간교육 계획 조회 -->
+    <select id="findAnnualPlanList"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.AnnualPlanDTO">
+        SELECT tae.id
+             , tae.edu_type
+             , tep.edu_type plan_edu_type
+             , (SELECT discription FROM tb_code WHERE tae.edu_type = code_name) AS edu_type_nm
+         , (SELECT discription FROM tb_code WHERE tep.edu_type = code_name) AS plan_edu_type_nm
+             , ISNULL(tep.status, tae.edu_type) as  status
+             , ISNULL((SELECT discription FROM tb_code WHERE tep.status = code_name),
+        (SELECT discription FROM tb_code WHERE tae.edu_type = code_name))
+                AS status_nm
+             , tae.dept_cd
+             , tae.completion_month
+             , tep.proceed_type
+             , tep.edu_user_id
+             , (SELECT user_nm FROM edu_insa ei WHERE ei.user_id = tep.edu_user_id) AS edu_user_nm
+             , ' [' + ed.dept_nm +']' +  ei.user_nm  AS sys_reg_user_nm
+             , (SELECT discription FROM tb_code WHERE tep.proceed_type = code_name) AS proceed_type_nm
+        , (SELECT discription FROM tb_code WHERE tep.progress_type = code_name) AS progress_type_nm
+        , (SELECT discription FROM tb_code WHERE tae.progress_type = code_name) AS annual_progress_type_nm
+             , (SELECT discription FROM tb_code WHERE tep.evaluation_type = code_name) AS evaluation_type_nm
+             , tae.plan_type
+             , tae.edu_status
+             , tae.group_id
+             , tep.title
+             , tep.plan_start_date
+             , CONVERT(CHAR(10), tep.plan_end_date, 23) plan_end_date
+             , tae.edu_num
+             , tae.document_num
+             , tae.sys_reg_user_id
+             , tep.month
+             , tep.plan_start_date
+             , tep.proceed_type
+             , tae.progress_type
+             , tep.evaluation_type
+             , tae.edu_goal
+             , tae.edu_coverage
+             , tae.res_role
+             , tae.edu_year
+             , tg.title group_nm
+             , tep.sys_reg_user_id as plan_sys_reg_user_id
+             , (select user_nm from edu_insa ei  where ei.user_id = tep.sys_reg_user_id) as plan_sys_reg_user_nm
+             , a_ed.dept_nm
+        , ei.user_nm
+        ,tep.id plan_id
+        , tae.version
+        , tae.use_flag
+        , CASE WHEN tae.use_flag ='S' THEN '개정'
+          WHEN tae.use_flag ='N' THEN '상신'
+        WHEN tae.use_flag ='R' THEN '재상신'
+        ELSE tae.use_flag END AS use_flag_nm
+        , tep.use_flag plan_use_flag
+        , tep.plan_start_date
+        , tae.save_yn
+        , CONVERT(CHAR(10), tep.plan_end_date, 23) plan_end_date
+        , CASE WHEN tae.edu_type ='edus11001'
+        THEN ( select id from tb_plan_sign tps where tps.plan_id = tae.id and tps.signform = 'comi1s1')
+        ELSE ( select id from tb_plan_sign tps where tps.plan_id = tae.id and tps.signform = 'comi1s8')
+        end annual_sign_id
+
+          FROM tb_annual_education tae
+        left join tb_group tg on tg.id = tae.group_id
+        left join tb_annual_plan tap on tap.annual_edu_id = tae.id
+        left join tb_education_plan tep on tep.id = tap.plan_id
+          left join edu_insa ei on tae.sys_reg_user_id = ei.user_id
+          left join edu_dept ed on ei.dept_cd = ed.dept_cd
+        left join edu_dept a_ed on a_ed.dept_cd = tae.dept_cd
+<!--        WHERE tep.delete_at !='Y'-->
+        <where>
+        <if test="edu_type != null and edu_type != ''">
+           AND tae.edu_type = #{edu_type}
+        </if>
+        <if test="version != null ">
+            AND tae.version = #{version}
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+           AND tae.dept_cd = #{dept_cd}
+        </if>
+        <if test="completion_month != null and completion_month > 0">
+           AND tae.completion_month = #{completion_month}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+           AND tae.proceed_type = #{proceed_type}
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+           AND tae.evaluation_type = #{evaluation_type}
+        </if>
+        <if test="plan_type != null and plan_type != ''">
+           AND tae.plan_type = #{plan_type}
+        </if>
+        <if test="edu_status != null and edu_status != ''">
+           AND tae.edu_status = #{edu_status}
+        </if>
+        <if test="title != null and title != ''">
+           AND tae.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="edu_num != null and edu_num != ''">
+           AND tae.edu_num LIKE CONCAT('%', #{edu_num}, '%')
+        </if>
+        <if test="document_num != null and document_num != ''">
+           AND tae.document_num LIKE CONCAT('%', #{document_num}, '%')
+        </if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+           AND tae.sys_reg_user_id = #{sys_reg_user_id}
+        </if>
+        <if test="edu_goal != null and edu_goal != ''">
+           AND tae.edu_goal = #{edu_goal}
+        </if>
+        <if test="edu_coverage != null and edu_coverage != ''">
+           AND tae.edu_coverage = #{edu_coverage}
+        </if>
+        <if test="res_role != null and res_role != ''">
+           AND tae.res_role = #{res_role}
+        </if>
+        <if test="edu_year != null and edu_year > 0">
+           AND tae.edu_year = #{edu_year}
+        </if>
+
+        <if test="use_flag != null and use_flag != ''">
+            <choose>
+                <when test="use_flag == 'I' ">
+                    AND tae.use_flag != 'C'
+                </when>
+                <when test="use_flag == 'Z' ">
+                    AND tae.use_flag != 'S'
+                </when>
+                <otherwise>
+                    AND tae.use_flag = #{use_flag}
+                </otherwise>
+            </choose>
+
+        </if>
+        <if test="dept_list != null and dept_list.size > 0">
+           AND tae.dept_cd IN
+            <foreach collection="dept_list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="group_id != null and group_id > 0">
+                AND tae.group_id = #{group_id}
+            </when>
+            <otherwise>
+                <if test="groupList != null and groupList.size != 0">
+                    AND tae.group_id IN
+                    <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                        #{group.id}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+         <if test="id != null and id > 0">
+             and tae.id = #{id}
+         </if>
+        </where>
+         ORDER BY tae.edu_type , tae.id desc
+        <if test="page != null">
+        OFFSET #{page_size} * (#{page_no} - 1) ROW
+         FETCH NEXT #{page_size} ROW ONLY
+        </if>
+    </select>
+
+    <!-- 연간교육 계획 갯수 조회 -->
+    <select id="findAnnualPlanListCnt"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="int">
+        SELECT COUNT(tep.id)
+        FROM tb_annual_education tae
+        left join tb_group tg on tg.id = tae.group_id
+        left join tb_annual_plan tap on tap.annual_edu_id = tae.id
+        left join tb_education_plan tep on tep.id = tap.plan_id
+        left join edu_insa ei on tae.sys_reg_user_id = ei.user_id
+        left join edu_dept ed on ei.dept_cd = ed.dept_cd
+        WHERE tep.delete_at !='Y'
+        <if test="edu_type != null and edu_type != ''">
+            AND tae.edu_type = #{edu_type}
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+            AND tae.dept_cd = #{dept_cd}
+        </if>
+        <if test="completion_month != null and completion_month > 0">
+            AND tae.completion_month = #{completion_month}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+            AND tae.proceed_type = #{proceed_type}
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            AND tae.evaluation_type = #{evaluation_type}
+        </if>
+        <if test="plan_type != null and plan_type != ''">
+            AND tae.plan_type = #{plan_type}
+        </if>
+        <if test="edu_status != null and edu_status != ''">
+            AND tae.edu_status = #{edu_status}
+        </if>
+        <if test="title != null and title != ''">
+            AND tae.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="edu_num != null and edu_num != ''">
+            AND tae.edu_num LIKE CONCAT('%', #{edu_num}, '%')
+        </if>
+        <if test="document_num != null and document_num != ''">
+            AND tae.document_num LIKE CONCAT('%', #{document_num}, '%')
+        </if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+            AND tae.sys_reg_user_id = #{sys_reg_user_id}
+        </if>
+        <if test="edu_goal != null and edu_goal != ''">
+            AND tae.edu_goal = #{edu_goal}
+        </if>
+        <if test="edu_coverage != null and edu_coverage != ''">
+            AND tae.edu_coverage = #{edu_coverage}
+        </if>
+        <if test="res_role != null and res_role != ''">
+            AND tae.res_role = #{res_role}
+        </if>
+        <if test="edu_year != null and edu_year > 0">
+            AND tae.edu_year = #{edu_year}
+        </if>
+        <if test="use_flag != null and use_flag > 0">
+            AND tae.use_flag = #{use_flag}
+        </if>
+
+        <if test="delete_at != null and delete_at != ''">
+            AND tae.delete_at = #{delete_at}
+        </if>
+        <if test="dept_list != null and dept_list.size > 0">
+            AND tae.dept_cd IN
+            <foreach collection="dept_list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="group_id != null and group_id > 0">
+                AND tae.group_id = #{group_id}
+            </when>
+            <otherwise>
+                <if test="groupList != null and groupList.size != 0">
+                    AND tae.group_id IN
+                    <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                        #{group.id}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 이관 데이터 조회 -->
+    <select id="findAnnualPlan"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.AnnualPlanDTO">
+        SELECT
+             tae.id
+             ,tae.edu_type
+            ,ei.user_nm
+            ,ed.dept_nm
+        , (SELECT discription FROM tb_code WHERE tae.edu_type = code_name) AS edu_type_nm
+             , tae.dept_cd
+             , tae.completion_month
+             , tae.proceed_type
+             , tae.progress_type
+            , (SELECT discription FROM tb_code WHERE tae.proceed_type = code_name) AS proceed_type_nm
+            , (SELECT discription FROM tb_code WHERE tae.progress_type = code_name) AS annual_progress_type_nm
+                  , tae.plan_type
+        , CASE WHEN tae.use_flag ='S' THEN '개정'
+         WHEN tae.use_flag ='N' THEN '상신'
+        WHEN tae.use_flag ='R' THEN '재상신'
+        ELSE tae.use_flag END AS use_flag_nm
+        , tae.edu_status
+        , tae.group_id
+        , (SELECT discription FROM tb_code WHERE tae.progress_type = code_name) AS progress_type_nm
+             , tae.progress_type
+             , tae.sys_reg_user_id
+             , tae.edu_goal
+             , tae.edu_coverage
+             , tae.res_role
+             , tae.edu_year
+             , tae.use_flag
+             , tae.delete_at
+             , tg.title  as group_nm
+             , tae.save_yn
+             , tae.version
+        , CASE WHEN tae.edu_type ='edus11001'
+        THEN ( select id from tb_plan_sign tps where tps.plan_id = tae.id and tps.signform = 'comi1s1')
+        ELSE ( select id from tb_plan_sign tps where tps.plan_id = tae.id and tps.signform = 'comi1s8')
+        end annual_sign_id
+
+          FROM tb_annual_education tae
+            left join edu_insa ei on tae.sys_reg_user_id = ei.user_id
+            left join edu_dept ed on ei.dept_cd = ed.dept_cd
+          left join tb_group tg on tg.id = tae.group_id
+         <where>
+             <if test="id != null and id > 0 " >
+                 and tae.id = #{id}
+             </if>
+             <if test="edu_year != null and edu_year > 0 " >
+                 and tae.edu_year = #{edu_year}
+             </if>
+             <if test="edu_type != null and edu_type !='' " >
+                 and tae.edu_type = #{edu_type}
+             </if>
+             <if test="version != null and version !='' " >
+                 and tae.version = #{version}
+             </if>
+             <if test="group_id != null and group_id > 0">
+                and tae.group_id = #{group_id}
+
+             </if>
+         </where>
+
+
+    </select>
+
+
+    <!-- 연관계획 데이터 이관 -->
+    <insert id="migrateAnnualPlan"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanMigrateEntity">
+        INSERT INTO tb_education_plan (
+            title,
+            year,
+            edu_type,
+            document_id,
+            proceed_type,
+            evaluation_type
+        ) VALUES (
+            #{title},
+            #{edu_year},
+            #{edu_type},
+            #{document_num},
+            #{proceed_type},
+            #{evaluation_type}
+        )
+    </insert>
+
+    <insert id="saveAnnualPlanJoin" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanJoinTable">
+
+        INSERT INTO tb_annual_plan(
+            annual_edu_id,
+            plan_id,
+            sys_reg_user_id
+        ) VALUES (
+            #{annual_edu_id},
+            #{plan_id},
+            #{sys_reg_user_id}
+        )
+    </insert>
+    <update id="updateAnnualPlanJoin"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanJoinTable">
+        update tb_annual_plan
+        <set>
+            <if test="annual_edu_id != null and annual_edu_id > 0">
+                annual_edu_id = #{annual_edu_id},
+            </if>
+            <if test="plan_id != null and plan_id > 0">
+                plan_id = #{plan_id},
+            </if>
+            <if test="use_flag != null and use_flag != '' ">
+                use_flag = #{use_flag},
+            </if>
+            <if test="delete_at != null and delete_at != '' ">
+                delete_at = #{delete_at},
+            </if>
+
+        </set>
+        <where>
+            <if test="id != null and id > 0">
+                and id = #{id}
+            </if>
+            <if test="annual_edu_id != null and annual_edu_id > 0">
+                and annual_edu_id = #{annual_edu_id}
+            </if>
+        </where>
+
+    </update>
+
+    <update id="saveAnnualSaveYn" parameterType="int">
+        update tb_annual_education
+        <set>
+            save_yn = #{save_yn}
+        </set>
+        <where>
+            <if test="id != null and id > 0">
+                and id = #{id}
+            </if>
+        </where>
+    </update>
+
+    <update id="saveAnnualSign"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity">
+        update tb_annual_education
+        <set>
+            <if test="edu_goal != null and edu_goal != ''">
+                , edu_goal = #{edu_goal}
+            </if>
+            <if test="edu_coverage != null and edu_coverage != ''">
+                , edu_coverage = #{edu_coverage}
+            </if>
+            <if test="res_role != null and res_role != ''">
+                , res_role = #{res_role}
+            </if>
+            <if test="edu_year != null and edu_year != ''">
+                , edu_year = #{edu_year}
+            </if>
+        </set>
+        <where>
+            <if test="id != null and id > 0">
+                and id = #{id}
+            </if>
+        </where>
+    </update>
+
+    <select id="findAnnualEducationMaxVersion"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity"
+            resultType="int">
+        select max(version)
+        from tb_annual_education tae
+        where
+        <if test="edu_year != null and edu_year > 0">
+            tae.edu_year = #{edu_year}
+        </if>
+    </select>
+
+    <select id="findBeforeVersionAnnualEdu"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.AnnualPlanDTO">
+        select
+            tae.id as old_id,
+            tae.edu_type,
+            tae.dept_cd,
+            tae.title,
+            tae.edu_goal,
+            tae.edu_coverage,
+            tae.res_role,
+            tae.edu_year,
+            tae.group_id,
+            tae.use_flag,
+            tae.delete_at,
+            tae.version,
+            tae.user_flag
+        from tb_annual_education tae
+        where tae.edu_year = #{edu_year}
+          and tae.version = #{version}
+    </select>
+
+    <select id="findBeforeVersionAnnualPlan"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity"
+            resultType="com.innon.education.annual.plan.repository.dto.TbAnnualPlanDTO">
+        select
+            tap.id,
+            tap.annual_edu_id,
+            tap.plan_id,
+            tap.delete_at,
+            tap.use_flag
+        from tb_annual_plan tap
+                 left join tb_annual_education tae on tap.annual_edu_id = tae.id
+        where tae.edu_year = #{edu_year}
+          and tae.version = #{version}
+    </select>
+
+    <select id="findBeforeVersionEducationPlan"
+            parameterType="com.innon.education.annual.plan.repository.entity.AnnualPlanEntity"
+            resultType="com.innon.education.management.plan.repository.model.ManagementPlan">
+        select
+            tep.id as old_id,
+            tep.title,
+            tep.state,
+            tep.edu_user_id,
+            tep.month,
+            tep.edu_type,
+            tep.plan_end_date,
+            tep.proceed_type,
+            tep.evaluation_type,
+            tep.parent_id,
+            tep.group_id,
+            tep.use_flag,
+            tep.delete_at
+        from tb_education_plan tep
+                 left join tb_annual_plan tap on tep.id = tap.plan_id
+                 left join tb_annual_education tae on tap.annual_edu_id = tae.id
+        where tae.edu_year = #{edu_year}
+          and tae.version = #{version}
+    </select>
+</mapper>

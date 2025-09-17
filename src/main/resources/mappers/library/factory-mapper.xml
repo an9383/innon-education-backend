@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.library.mapper.factory-mapper" >
+    <!-- 문서현황 -->
+    <select id="findDisplayFactoryList"
+            parameterType="com.innon.education.library.factory.repository.entity.FactorySearchEntity"
+            resultType="hashMap">
+        <!-- 작성부서와 보관장소 조인 조회 필요 -->
+        SELECT td.document_num
+             , td.title
+             , td.reg_date
+             , tdl.status
+          FROM tb_document td
+          LEFT JOIN tb_document_loan tdl
+            ON td.id = tdl.d_id and tdl.delete_at !='Y'
+         WHERE 1=1
+        <if test="code_id != null and code_id != ''">
+           AND code_id = #{code_id}
+        </if>
+        <if test="document_num != null and document_num != ''">
+           AND document_num = #{document_num}
+        </if>
+        <if test="reg_user_id != null and reg_user_id != ''">
+           AND reg_user_id = #{reg_user_id}
+        </if>
+        <if test="reg_date != null and reg_date != ''">
+           AND reg_date LIKE CONCAT('%', #{reg_date}, '%')
+        </if>
+    </select>
+
+    <!-- 문서 위치 갯수 조회 -->
+    <select id="findLocationDocumentCnt"
+            parameterType="com.innon.education.library.factory.repository.entity.FactoryEntity"
+            resultType="int">
+        SELECT COUNT(tld.id)
+          FROM tb_location_document tld
+         WHERE document_id = #{document_id}
+        and tld.delete_at != 'Y'
+    </select>
+
+    <!-- 문서 입고 처리 -->
+    <insert id="saveLocationDocument" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.library.factory.repository.entity.FactoryEntity">
+        INSERT INTO tb_location_document (
+            document_id
+          , location_id
+          , display_user_id
+        <if test="display_date != null">
+          , display_date
+        </if>
+          , delete_at
+          , use_flag
+          , sys_reg_date
+          , sys_reg_user_id
+        ) VALUES (
+            #{document_id}
+          , #{location_id}
+          , #{display_user_id}
+        <if test="display_date != null and display_date != ''">
+          , #{display_date}
+        </if>
+          , 'N'
+          , 'Y'
+          , getDate()
+          , #{sys_reg_user_id}
+        )
+    </insert>
+
+    <update id="updateLocationDocument"
+            parameterType="com.innon.education.library.factory.repository.entity.FactoryEntity">
+        UPDATE tb_location_document
+           SET location_id = #{location_id}
+        <if test="display_user_id != null and display_user_id != ''">
+             , display_user_id = #{display_user_id}
+        </if>
+        <if test="display_date != null and display_date != ''">
+            , display_date = #{display_date}
+        </if>
+        <if test ="delete_at != null and delete_at !='' ">
+            ,delete_at =  #{delete_at}
+        </if>
+             , sys_upd_user_id = #{sys_reg_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE document_id = #{document_id}
+    </update>
+
+    <!-- 문서 위치 수정 -->
+    <update id="updateLocationDocument_back"
+            parameterType="com.innon.education.library.factory.repository.entity.FactoryEntity">
+        MERGE INTO tb_location_document
+        USING (SELECT 1 AS DUM) X
+           ON (document_id = #{document_id})
+         WHEN MATCHED THEN
+       UPDATE SET location_id = #{location_id}
+        <if test="display_user_id != null and display_user_id != ''">
+            , display_user_id = #{display_user_id}
+            , display_date = getDate()
+            , sys_reg_user_id = #{sys_reg_user_id}
+            , sys_reg_date = getDate()
+        </if>
+         WHEN NOT MATCHED THEN
+       INSERT (
+           document_id,
+           location_id,
+        <if test="display_user_id != null and display_user_id != ''">
+           display_user_id,
+           display_date,
+        </if>
+           delete_at
+       ) VALUES (
+           #{document_id},
+           #{location_id},
+        <if test="display_user_id != null and display_user_id != ''">
+           #{display_user_id},
+           getDate(),
+        </if>
+           'N'
+       );
+    </update>
+
+    <!-- 문서대출 상태 조회 -->
+    <select id="findDocumentLoanCntByDocId"
+            parameterType="com.innon.education.library.document.repasitory.entity.DocumentApplyEntity"
+            resultType="int">
+        SELECT COUNT(tdl.id)
+          FROM tb_document_loan tdl
+         WHERE tdl.d_id = #{document_id}
+        and tdl.delete_at !='Y'
+    </select>
+
+    <!-- 문서대출 상태 처리 -->
+    <update id="updateDocumentLoan"
+            parameterType="com.innon.education.library.document.repasitory.entity.DocumentApplyEntity">
+        UPDATE tb_document_loan
+        <choose>
+        	<!-- 이수철 : 대출신청 인경우 왜 입고로 다시 바꾸나? -->
+        	<!-- 대출신청->입고 , 연장신청->대출 , 대출승인->대출 -->
+            <when test="status =='docs11006' and update_type == null">
+              SET status = 'docs11003'
+            </when>
+            <when test="status =='docs11007' and update_type == null">
+              SET status = 'docs11001'
+            </when>
+            <when test="status =='docs11009' and update_type == null">
+                SET status = 'docs11001'
+            </when>
+            <otherwise>
+              SET status = #{status}
+            </otherwise>
+        </choose>
+        <if test="current_start_date != null">
+            , current_start_date = #{current_start_date}
+        </if>
+        <if test="current_end_date != null">
+            , current_end_date = #{current_end_date}
+        </if>
+
+        <if test="current_end_date_req != null">
+            , current_end_date_req = #{current_end_date_req}
+        </if>
+        <if test="isSetCurrentEndDate == 1">
+            , current_end_date = current_end_date_req
+            , current_end_date_req = null
+        </if>
+        <if test="isSetCurrentEndDate == -1">
+            , current_end_date_req = null
+        </if>
+
+        <if test="req_user_id != null">
+            , req_user_id = #{req_user_id}
+        </if>
+        <if test="delete_at != null and delete_at != '' " >
+            , delete_at = #{delete_at}
+        </if>
+            , sys_upd_reg_date = getDate()
+            , sys_upd_user_id = #{sys_reg_user_id}
+        WHERE d_id = #{document_id}
+    </update>
+    <select id="updateDocumentLoan_back"
+            parameterType="com.innon.education.library.document.repasitory.entity.DocumentApplyEntity"
+            resultType="int">
+        DECLARE @id INT
+        IF NOT EXISTS (
+            SELECT id
+              FROM tb_document_loan
+             WHERE d_id = #{document_id}
+        )
+        BEGIN
+            INSERT INTO tb_document_loan (
+                d_id
+              , status
+            <if test="current_end_date != null">
+              , current_end_date
+            </if>
+            <if test="current_start_date != null">
+              , current_start_date
+            </if>
+              , req_user_id
+            ) VALUES (
+                #{document_id}
+              , #{status}
+            <if test="current_end_date != null">
+              , #{current_end_date}
+            </if>
+            <if test="current_start_date != null">
+              , #{current_start_date}
+            </if>
+              , #{req_user_id}
+            )
+            SELECT @id = SCOPE_IDENTITY()
+        END
+        ELSE
+        BEGIN
+            DECLARE @outputTable TABLE (oldId INT)
+            UPDATE tB_document_loan
+               SET status = #{status}
+            <if test="current_end_date != null">
+                 , current_end_date = #{current_end_date}
+            </if>
+            <if test="current_start_date != null">
+                 , current_start_date = #{current_start_date}
+            </if>
+            <if test="req_user_id != null">
+                 , req_user_id = #{req_user_id}
+            </if>
+            OUTPUT DELETED.id INTO @outputTable
+             WHERE d_id = #{document_id}
+            SELECT @id = oldId FROM @outputTable
+        END
+        SELECT @id AS id
+    </select>
+
+    <!-- 개발과정에서 TB_LOCATION_DOCUMENT 데이터 삭제를 위한 쿼리 -->
+    <delete id="deleteTrashLocationDocument">
+        DELETE FROM tb_location_document
+    </delete>
+
+    <delete id="deleteLocationDocument" parameterType="com.innon.education.library.document.repasitory.entity.DocumentApplyEntity">
+        DELETE FROM tb_location_document
+        <where>
+
+                and document_id =  #{document_id}
+
+        </where>
+    </delete>
+</mapper>

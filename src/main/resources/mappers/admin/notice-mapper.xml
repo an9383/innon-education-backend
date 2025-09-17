@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.notice-mapper">
+    <!-- 공지사항 등록 -->
+    <insert id="saveNotice" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.board.repository.model.Notice">
+        INSERT INTO tb_board_notice (
+            title,
+            content,
+            order_num,
+            noti_type,
+            url_addr,
+            sys_reg_user_id,
+            sys_reg_date,
+            delete_at,
+            use_flag,
+            noti_start_date,
+            noti_end_date,
+            group_id
+        ) VALUES (
+            #{title},
+            #{content},
+            #{order_num},
+            #{noti_type},
+            #{url_addr},
+            #{sys_reg_user_id},
+            getDate(),
+            'N',
+            #{use_flag},
+            #{noti_start_date},
+            #{noti_end_date},
+            #{group_id}
+        )
+    </insert>
+
+    <!-- 공지사항 조회 -->
+    <select id="findNoticeList"
+            parameterType="com.innon.education.admin.board.repository.model.Notice"
+            resultType="com.innon.education.admin.board.repository.dto.NoticeDTO">
+        SELECT tbn.id
+             , tbn.title
+             , tbn.content
+             , tbn.order_num
+             , tbn.noti_type
+             , (SELECT discription FROm tb_code WHERE code_name = tbn.noti_type AND delete_at != 'Y') AS noti_type_nm
+             , tbn.url_addr
+             , tbn.sys_reg_user_id
+             , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+             , tbn.sys_reg_date
+             , CONVERT(CHAR(10), tbn.sys_reg_date, 23) AS convert_reg_date
+             , tbn.delete_at
+             , tbn.use_flag
+             , IIF(tbn.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , CONVERT(CHAR(10), tbn.noti_start_date, 23) AS noti_start_date
+             , CONVERT(CHAR(10), tbn.noti_end_date, 23) AS noti_end_date
+             , tbn.group_id
+             , IIF(tbn.group_id = 0,
+               '전체',
+               (SELECT title FROM tb_group WHERE id = tbn.group_id AND delete_at != 'Y')) AS group_nm
+          FROM tb_board_notice tbn
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tbn.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+          <where>
+              AND tbn.delete_at != 'Y'
+              <if test="noti_type != null and noti_type != ''">
+                  AND tbn.noti_type = #{noti_type}
+              </if>
+              <if test="noti_date_start != null and noti_date_start != ''">
+                  AND tbn.noti_end_date >= #{noti_date_start}
+              </if>
+              <if test="noti_date_end != null and noti_date_end != ''">
+                  AND tbn.noti_start_date <![CDATA[<]]> DATEADD(DAY, 1, CONVERT(DATE, #{noti_date_end}))
+              </if>
+              <if test="use_flag != null and !use_flag.equals('\u0000')">
+                  AND tbn.use_flag = #{use_flag}
+              </if>
+              <choose>
+                  <when test="group_id != null and group_id > 0">
+                      AND (tbn.group_id = #{group_id}
+                       OR tbn.group_id = 0)
+                  </when>
+                  <otherwise>
+                      <if test="groupList != null and groupList.size != 0">
+                          AND tbn.group_id IN
+                          <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                              #{group.id}
+                          </foreach>
+                      </if>
+                  </otherwise>
+              </choose>
+              <choose>
+                  <when test="search_txt != null and search_txt != ''">
+                      <choose>
+                          <when test="search_type != null and search_type != ''">
+                              AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                          </when>
+                          <otherwise>
+                              AND (tbn.title LIKE CONCAT('%', #{search_txt}, '%')
+                              OR tbn.content LIKE CONCAT('%', #{search_txt}, '%')
+                              OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                          </otherwise>
+                      </choose>
+                  </when>
+              </choose>
+          </where>
+         ORDER BY order_num, sys_reg_date DESC
+    </select>
+
+    <!-- 공지사항 수정 -->
+    <update id="updateNotice"
+            parameterType="com.innon.education.admin.board.repository.model.Notice">
+        UPDATE tb_board_notice
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="order_num != null">order_num = #{order_num},</if>
+            <if test="noti_type != null and noti_type != ''">noti_type = #{noti_type},</if>
+            <if test="url_addr != null and url_addr != ''">url_addr = #{url_addr},</if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">use_flag = #{use_flag},</if>
+            <if test="noti_start_date != null">noti_start_date = #{noti_start_date},</if>
+            <if test="noti_end_date != null">noti_end_date = #{noti_end_date},</if>
+            <if test="group_id != null and group_id > 0">group_id = #{group_id},</if>
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        </set>
+         WHERE id = #{id}
+    </update>
+
+    <!-- 공지사항 삭제 -->
+    <update id="deleteNotice"
+            parameterType="com.innon.education.admin.board.repository.model.Notice">
+        UPDATE tb_board_notice
+           SET delete_at = 'Y'
+             , sys_upd_user_id = #{sys_reg_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.faq-mapper">
+    <!-- FAQ 등록 -->
+    <insert id="saveFaq" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.board.repository.model.Faq">
+        INSERT INTO tb_board_faq (
+            question,
+            answer,
+            order_num,
+            sys_reg_user_id,
+            sys_reg_date,
+            delete_at,
+            use_flag,
+            category,
+            group_id
+        ) VALUES (
+            #{question},
+            #{answer},
+            #{order_num},
+            #{sys_reg_user_id},
+            getDate(),
+            'N',
+            #{use_flag},
+            #{category},
+            #{group_id}
+        )
+    </insert>
+
+    <!-- FAQ 조회 -->
+    <select id="findFaqList"
+            parameterType="com.innon.education.admin.board.repository.model.Faq"
+            resultType="com.innon.education.admin.board.repository.dto.FaqDTO">
+        SELECT tbf.id
+             , tbf.question
+             , tbf.answer
+             , tbf.order_num
+             , tbf.sys_reg_user_id
+             , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+             , tbf.sys_reg_date
+             , CONVERT(CHAR(10), tbf.sys_reg_date, 23) AS convert_reg_date
+             , tbf.delete_at
+             , tbf.use_flag
+             , IIF(tbf.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , tbf.group_id
+             , IIF(tbf.group_id = 0,
+               '전체',
+               (SELECT title FROM tb_group WHERE id = tbf.group_id AND delete_at != 'Y')) AS group_nm
+             , tbf.category
+             , (SELECT discription FROM tb_code WHERE code_name = tbf.category AND delete_at != 'Y') AS category_nm
+          FROM tb_board_faq tbf
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tbf.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND tbf.delete_at != 'Y'
+            <if test="use_flag != null and !use_flag.equals('\u0000')">
+                AND tbf.use_flag = #{use_flag}
+            </if>
+            <if test="category != null and category != ''">
+                AND tbf.category = #{category}
+            </if>
+            <choose>
+                <when test="group_id != null and group_id > 0">
+                    AND (tbf.group_id = #{group_id}
+                     OR tbf.group_id = 0)
+                </when>
+                <otherwise>
+                    <if test="groupList != null and groupList.size != 0">
+                        AND tbf.group_id IN
+                        <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                            #{group.id}
+                        </foreach>
+                    </if>
+                </otherwise>
+            </choose>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (tbf.question LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tbf.answer LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ORDER BY order_num, sys_reg_date DESC
+    </select>
+
+    <!-- FAQ 수정 -->
+    <update id="updateFaq"
+            parameterType="com.innon.education.admin.board.repository.model.Faq">
+        UPDATE tb_board_faq
+        <set>
+            <if test="question != null and question != ''">question = #{question},</if>
+            <if test="answer != null and answer != ''">answer = #{answer},</if>
+            <if test="order_num != null and order_num > 0">order_num = #{order_num},</if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">use_flag = #{use_flag},</if>
+            <if test="group_id != null">group_id = #{group_id},</if>
+            <if test="category != null and category != ''">category = #{category},</if>
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        </set>
+         WHERE id = #{id}
+    </update>
+
+    <!-- FAQ 삭제(use_yn값 update) -->
+    <update id="deleteFaq"
+            parameterType="com.innon.education.admin.board.repository.model.Faq">
+        UPDATE tb_board_faq
+           SET delete_at = 'Y'
+             , sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+         WHERE id= #{id}
+    </update>
+</mapper>

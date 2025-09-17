@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.qna-mapper">
+    <!-- QnA 등록 -->
+    <insert id="saveQna" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.board.repository.model.Qna">
+        INSERT INTO tb_board_qna (
+            title,
+            content,
+            sys_reg_user_id,
+            sys_reg_date,
+            write_cnt,
+            use_flag,
+            delete_at,
+            group_id
+        ) VALUES (
+            #{title},
+            #{content},
+            #{sys_reg_user_id},
+            getDate(),
+            0,
+            #{use_flag},
+            'N',
+            #{group_id}
+        )
+    </insert>
+
+    <!-- QnA 조회 -->
+    <select id="findQnaList"
+            parameterType="com.innon.education.admin.board.repository.model.Qna"
+            resultType="com.innon.education.admin.board.repository.dto.QnaDTO">
+        SELECT tbq.id
+             , tbq.title
+             , tbq.content
+             , tbq.write_cnt
+             , tbq.sys_reg_user_id
+             , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+             , tbq.sys_reg_date
+             , CONVERT(CHAR(10), tbq.sys_reg_date, 23) AS convert_reg_date
+             , tbq.delete_at
+             , tbq.use_flag
+             , IIF(tbq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , tbq.group_id
+             , (SELECT title FROM tb_group WHERE id = tbq.group_id AND delete_at != 'Y') AS group_nm
+          FROM tb_board_qna tbq
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tbq.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND tbq.delete_at != 'Y'
+            <if test="use_flag != null and !use_flag.equals('\u0000')">
+                AND tbq.use_flag = #{use_flag}
+            </if>
+            <choose>
+                <when test="group_id != null and group_id > 0">
+                    AND tbq.group_id = #{group_id}
+                </when>
+                <otherwise>
+                    <if test="groupList != null and groupList.size != 0">
+                        AND tbq.group_id IN
+                        <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                            #{group.id}
+                        </foreach>
+                    </if>
+                </otherwise>
+            </choose>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (tbq.title LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tbq.content LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ORDER BY sys_reg_date DESC
+    </select>
+
+    <!-- QnA 수정 -->
+    <update id="updateQna"
+            parameterType="com.innon.education.admin.board.repository.model.Qna">
+        UPDATE tb_board_qna
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">use_flag = #{use_flag},</if>
+            sys_upd_user_id = #{sys_reg_user_id},
+            sys_upd_reg_date = getDate()
+        </set>
+         WHERE id = #{id}
+    </update>
+
+    <!-- Qna 조회수 수정 -->
+    <update id="updateQnaWriteCnt"
+            parameterType="com.innon.education.admin.board.repository.model.Qna">
+        UPDATE tb_board_qna
+           SET write_cnt = write_cnt + 1
+         WHERE id = #{id}
+    </update>
+
+    <!-- QnA 삭제(use_yn값 update) -->
+    <update id="deleteQna"
+            parameterType="com.innon.education.admin.board.repository.model.Qna">
+        UPDATE tb_board_qna
+           SET delete_at = 'Y'
+             , sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+         WHERE id = #{id}
+    </update>
+
+    <!-- QnA 댓글 등록 -->
+    <insert id="saveQnaReply" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.board.repository.model.QnaReply">
+        INSERT INTO tb_board_qna_reply (
+            qna_id,
+            content,
+            sys_reg_user_id,
+            sys_reg_date,
+            parent_id,
+            delete_at
+        ) VALUES (
+            #{qna_id},
+            #{content},
+            #{sys_reg_user_id},
+            getDate(),
+            #{parent_id},
+            'N'
+        )
+    </insert>
+
+    <!-- QnA 댓글 조회 -->
+    <select id="findQnaReplyList"
+            parameterType="int"
+            resultType="com.innon.education.admin.board.repository.dto.QnaReplyDTO">
+        WITH tb_board_qna_reply_CTE AS (
+            SELECT id
+                 , content
+                 , parent_id
+                 , 0 AS lev
+                 , CONVERT(varchar(500), FORMAT(id, '0000000000')) as id_path
+                 , content AS content_path
+                 , qna_id
+                 , delete_at
+                 , sys_reg_user_id
+                 , sys_reg_date
+            FROM tb_board_qna_reply WITH(NOLOCK)
+           WHERE parent_id = 0
+           UNION ALL
+          SELECT qr.id
+               , qr.content
+               , qr.parent_id
+               , qrc.lev + 1
+               , CONVERT(varchar(500), qrc.id_path + '>' + FORMAT(qr.id, '0000000000')) AS id_path
+               , CONVERT(TEXT, CONCAT(qrc.content_path, '>', qr.content)) AS content_path
+               , qr.qna_id
+               , qr.delete_at
+               , qr.sys_reg_user_id
+               , qr.sys_reg_date
+            FROM tb_board_qna_reply qr
+           INNER JOIN tb_board_qna_reply_CTE qrc
+              ON qrc.id = qr.parent_id
+        )
+        SELECT IIF(
+                tbqrc.delete_at = 'Y',
+                REPLICATE('    ', tbqrc.lev) + '*** 삭제된 댓글 ***',
+                CONCAT(REPLICATE('    ', tbqrc.lev), tbqrc.content)
+             ) AS view_content
+             , tbqrc.id
+             , tbqrc.content
+             , tbqrc.qna_id
+             , tbqrc.parent_id
+             , tbqrc.lev
+             , tbqrc.id_path
+             , tbqrc.content_path
+             , tbqrc.delete_at
+             , tbqrc.sys_reg_user_id
+             , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+             , tbqrc.sys_reg_date
+             , CONVERT(CHAR(10), tbqrc.sys_reg_date, 23) AS convert_reg_date
+          FROM tb_board_qna_reply_CTE tbqrc WITH(NOLOCK)
+          LEFT JOIN edu_insa ei
+            ON (ei.user_id = tbqrc.sys_reg_user_id)
+          LEFT JOIN edu_dept ed
+            ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND delete_at != 'Y'
+            <if test="qna_id != null">
+                AND qna_id = #{qna_id}
+            </if>
+        </where>
+         ORDER BY id_path
+    </select>
+
+    <!-- QnA 댓글 수정 -->
+    <update id="updateQnaReply"
+            parameterType="com.innon.education.admin.board.repository.model.QnaReply">
+        UPDATE tb_board_qna_reply
+           SET content = #{content}
+             , sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+         WHERE id = #{id}
+    </update>
+
+    <!-- QnA 댓글 삭제 -->
+    <update id="deleteQnaReply"
+            parameterType="com.innon.education.admin.board.repository.model.QnaReply">
+        UPDATE tb_board_qna_reply
+           SET delete_at = 'Y'
+             , sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+        <where>
+            <if test="id != null and id > 0">AND id = #{id}</if>
+            <if test="qna_id != null and qna_id > 0">AND qna_id = #{qna_id}</if>
+        </where>
+    </update>
+</mapper>

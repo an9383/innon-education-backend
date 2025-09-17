@@ -1,0 +1,1095 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.management.mapper.plan-mapper">
+    <!-- 문서계획 등록 -->
+    <insert id="savePlan" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.management.plan.repository.model.ManagementPlan">
+        INSERT INTO tb_education_plan (
+        title,
+        <if test="status != null and status != ''">
+            status,
+        </if>
+        edu_user_id,
+        <if test="year != null and year > 0">
+            year,
+        </if>
+        <if test="month != null and month > 0">
+            month,
+        </if>
+        edu_type,
+        plan_start_date,
+        plan_end_date,
+        <if test="approve_step != null and approve_step != ''">
+            approve_step,
+        </if>
+        <if test="question_num != null and question_num != ''">
+            question_num,
+        </if>
+        <if test="work_num != null and work_num != ''">
+            work_num,
+        </if>
+        <if test="course_id != null and course_id != ''">
+            course_id,
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            duty_category,
+        </if>
+        document_id,
+        <if test="proceed_type != null and proceed_type != ''">
+            proceed_type,
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            evaluation_type,
+        </if>
+        <if test="completion_type != null and completion_type != ''">
+            completion_type,
+        </if>
+        <if test="progress_type != null and progress_type != ''">
+            progress_type,
+        </if>
+        valid_date,
+        <if test="relation_system != null and relation_system != ''">
+            relation_system,
+        </if>
+        <if test="relation_num != null and relation_num != ''">
+            relation_num,
+        </if>
+        <if test="passing_rate != null and passing_rate != ''">
+            passing_rate,
+        </if>
+        <if test="job_qualified_id != null and job_qualified_id != ''">
+            job_qualified_id,
+        </if>
+        <if test="job_revision_id != null and job_revision_id != ''">
+            job_revision_id,
+        </if>
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+            sys_reg_user_id,
+        </if>
+        <if test="filepath != null and filepath != ''">
+            filepath,
+        </if>
+        <if test="website != null and website != ''">
+            website,
+        </if>
+        state,
+        re_edu_cnt,
+        parent_id,
+        dept_cd,
+        dept_nm,
+        group_id,
+        use_flag
+        ) VALUES (
+        #{title},
+        <if test="status != null and status != ''">
+            #{status},
+        </if>
+        #{edu_user_id},
+        <if test="year != null and year > 0">
+            #{year},
+        </if>
+        <if test="month != null and month > 0">
+            #{month},
+        </if>
+        #{edu_type},
+        CONVERT(DATETIME2, #{plan_start_date}),
+        CONVERT(DATETIME2, #{plan_end_date}),
+        <if test="approve_step != null and approve_step != ''">
+            #{approve_step},
+        </if>
+        <if test="question_num != null and question_num != ''">
+            #{question_num},
+        </if>
+        <if test="work_num != null and work_num != ''">
+            #{work_num},
+        </if>
+        <if test="course_id != null and course_id != ''">
+            #{course_id},
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            #{duty_category},
+        </if>
+        #{document_id},
+        <if test="proceed_type != null and proceed_type != ''">
+            #{proceed_type},
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            #{evaluation_type},
+        </if>
+        <if test="completion_type != null and completion_type != ''">
+            #{completion_type},
+        </if>
+        <if test="progress_type != null and progress_type != ''">
+            #{progress_type},
+        </if>
+        #{valid_date},
+        <if test="relation_system != null and relation_system != ''">
+            #{relation_system},
+        </if>
+        <if test="relation_num != null and relation_num != ''">
+            #{relation_num},
+        </if>
+        <if test="passing_rate != null and passing_rate != ''">
+            #{passing_rate},
+        </if>
+        <if test="job_qualified_id != null and job_qualified_id != ''">
+            #{job_qualified_id},
+        </if>
+        <if test="job_revision_id != null and job_revision_id != ''">
+            #{job_revision_id},
+        </if>
+
+        <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+            #{sys_reg_user_id},
+        </if>
+
+        <if test="filepath != null and filepath != ''">
+            #{filepath},
+        </if>
+
+        <if test="website != null and website != ''">
+            #{website},
+        </if>
+
+        #{state},
+        #{re_edu_cnt},
+        #{parent_id},
+        #{dept_cd},
+        #{dept_nm},
+        #{group_id},
+        #{use_flag}
+        )
+    </insert>
+
+    <!-- 교육대상 등록 -->
+    <insert id="savePlanUser" useGeneratedKeys="true" keyProperty="plan_user_id"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity">
+        INSERT INTO tb_education_plan_user (plan_id,
+                                            qms_user_id,
+                                            dept_nm,
+                                            dept_cd,
+                                            status)
+        VALUES (#{plan_id},
+                #{user_id},
+                #{dept_nm},
+                #{dept_cd},
+                #{status})
+    </insert>
+    <select id="savePlanUser_back"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity"
+            resultType="string">
+        DECLARE
+        @status VARCHAR(20)
+        IF NOT EXISTS (
+        SELECT id
+        FROM tb_education_plan_user
+        WHERE plan_id =
+        #{plan_id}
+        AND
+        qms_user_id
+        =
+        #{qms_user_id}
+        )
+        BEGIN
+        INSERT INTO tb_education_plan_user (plan_id,
+                                            qms_user_id,
+                                            dept_nm,
+                                            dept_cd,
+                                            status)
+        VALUES (#{plan_id},
+                #{user_id},
+                #{dept_nm},
+                #{dept_cd},
+                #{status})
+        SELECT @status = 'INSERT'
+        END
+        ELSE
+        BEGIN
+        SELECT @status = 'OVERLAP'
+        END
+        SELECT @status AS status
+    </select>
+
+    <!-- 참고URL 등록 -->
+    <insert id="savePlanContent" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.management.plan.repository.entity.HelpUrlEntity">
+        INSERT INTO tb_education_plan_content (
+        plan_id,
+        url_addr,
+        seconds,
+        <if test="edu_contents != null and edu_contents != ''">
+        edu_contents
+        </if>
+        ) VALUES (
+        #{plan_id},
+        #{url_addr},
+        #{seconds},
+        <if test="edu_contents != null and edu_contents != ''">
+        #{edu_contents}
+        </if>
+        )
+    </insert>
+
+    <!-- 교육 문서  등록 -->
+    <insert id="savePlanDocument" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.library.document.repasitory.dto.PlanDocument">
+        INSERT INTO tb_education_plan_document (plan_id,
+                                                document_id)
+        VALUES (#{plan_id},
+                #{d_id})
+    </insert>
+
+
+    <!-- 문제정보 등록 -->
+    <insert id="saveQuestionInfo"
+            parameterType="com.innon.education.management.plan.repository.entity.QuestionInfoEntity">
+        <selectKey resultType="int" keyProperty="id" order="AFTER">
+            SELECT IDENT_CURRENT('tb_question_info')
+        </selectKey>
+        INSERT INTO tb_question_info (
+        plan_id,
+        <if test="question_num != null and question_num != ''">
+            question_num,
+        </if>
+        <if test="test_num != null and test_num != ''">
+            test_num,
+        </if>
+        <if test="question_type != null and question_type != ''">
+            question_type,
+        </if>
+        <if test="edu_type != null and edu_type != ''">
+            edu_type,
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            duty_category,
+        </if>
+        <if test="document_id != null and document_id != ''">
+            document_id ,
+        </if>
+        qb_q_id,
+        group_id
+        ) VALUES (
+        #{plan_id},
+        <if test="question_num != null and question_num != ''">
+            #{question_num},
+        </if>
+        <if test="test_num != null and test_num != ''">
+            #{test_num},
+        </if>
+        <if test="question_type != null and question_type != ''">
+            #{question_type},
+        </if>
+        <if test="edu_type != null and edu_type != ''">
+            #{edu_type},
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            #{duty_category},
+        </if>
+        <if test="document_id != null and document_id != ''">
+            #{document_id},
+        </if>
+        #{qb_q_id},
+        #{group_id}
+        )
+    </insert>
+
+    <!-- 문제정보 상세 등록 -->
+    <insert id="saveQuestionInfoDetail"
+            parameterType="com.innon.education.management.plan.repository.entity.QuestionInfoDetailEntity">
+        INSERT INTO tb_question_info_detail (
+        question_info_id,
+        question_type,
+        <if test="edu_type != null and edu_type != ''">
+            edu_type,
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            duty_category,
+        </if>
+        document_id,
+        <if test="question_difficulty != null and question_difficulty != ''">
+            question_difficulty,
+        </if>
+        question_contents,
+        order_num
+        ) VALUES (
+        #{questionInfo_id},
+        #{question_type},
+        <if test="edu_type != null and edu_type != ''">
+            #{edu_type},
+        </if>
+        <if test="duty_category != null and duty_category != ''">
+            #{duty_category},
+        </if>
+        #{document_id},
+        <if test="question_difficulty != null and question_difficulty != ''">
+            #{question_difficulty},
+        </if>
+        #{question_contents},
+        #{order_num}
+        )
+    </insert>
+
+    <!-- 교육계획 조회 -->
+    <select id="educationPlanList"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanEntity"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+        , tep.title
+        , tep.status
+        , (SELECT discription FROM tb_code WHERE code_name = tep.status AND delete_at != 'Y') AS status_nm
+        , tep.edu_user_id
+        , tep.group_id
+        , (select user_nm from edu_insa ei where ei.user_id = tep.edu_user_id) edu_user_nm
+        , tep.year
+        , tep.month
+        , tep.edu_type
+        , tep.sys_reg_user_id
+        , (SELECT discription FROM tb_code WHERE code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+        , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+        , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+        , tep.approve_step
+        , tep.question_num
+        , tep.work_num
+        , tep.course_id
+        , tep.duty_category
+        , tep.document_id
+        , tep.proceed_type
+        , (SELECT discription FROM tb_code WHERE code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+        , tep.evaluation_type
+        , (SELECT discription FROM tb_code WHERE code_name = tep.evaluation_type AND delete_at != 'Y') AS
+        evaluation_type_nm
+        , tep.completion_type
+        , (SELECT discription FROM tb_code WHERE code_name = tep.completion_type AND delete_at != 'Y') AS
+        completion_type_nm
+        , tep.progress_type
+        , (SELECT discription FROM tb_code WHERE code_name = tep.progress_type AND delete_at != 'Y') AS progress_type_nm
+        , tep.valid_date
+        , tep.relation_system
+        , (SELECT discription FROM tb_code WHERE code_name = tep.relation_system AND delete_at != 'Y') AS
+        relation_system_nm
+        , tep.re_edu_cnt
+        , tep.parent_id
+        , tep.use_flag
+        , tep.state
+        , (SELECT memo FROM tb_job_qualified where id = tep.job_qualified_id) AS job_code
+        , ROW_NUMBER() OVER (ORDER BY plan_start_date desc, id desc) AS ROW_NO
+        , COUNT(*) OVER() AS total_cnt
+        , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+        FROM tb_education_plan tep
+
+        <choose>
+            <when test="qms_user_id != null and qms_user_id  !='' ">
+                LEFT JOIN tb_education_plan_user epu on epu.plan_id = tep.id and epu.delete_at != 'Y'
+                where epu.qms_user_id = #{qms_user_id}
+                and tep.use_flag != 'N'
+            </when>
+            <otherwise>
+                where 1=1
+                and tep.use_flag != 'N'
+            </otherwise>
+        </choose>
+
+
+        <choose>
+            <when test="group_id != null and group_id > 0">
+                AND tep.group_id = #{group_id}
+            </when>
+            <otherwise>
+                <if test="groupList != null and groupList.size != 0">
+                    AND tep.group_id IN
+                    <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                        #{group.id}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+        <if test="id != null and id > 0">
+            AND tep.id = #{id}
+        </if>
+        <if test="parent_id != null and parent_id > 0">
+            AND tep.parent_id = #{parent_id}
+        </if>
+        <if test="status != null and status != '' ">
+
+            <choose>
+                <when test="status =='edus11003' ">
+                    and tep.status not in ( 'edus11001', 'edus11005')
+                </when>
+                <otherwise>
+                    AND tep.status = #{status}
+
+                </otherwise>
+            </choose>
+
+        </if>
+        <if test="title != null and title != ''">
+            AND tep.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="edu_type != null and edu_type != ''">
+            AND tep.edu_type = #{edu_type}
+        </if>
+        <if test="document_id != null and document_id != ''">
+            AND tep.id IN (SELECT plan_id
+            FROM tb_education_plan_document tepd
+            LEFT JOIN tb_document td on td.id = tepd.document_id
+            where td.document_num LIKE CONCAT('%', #{document_id}, '%'))
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            AND tep.evaluation_type = #{evaluation_type}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+            AND tep.proceed_type = #{proceed_type}
+        </if>
+        <if test="work_num != null and work_num != ''">
+            AND tep.work_num = #{work_num}
+        </if>
+        <if test="use_flag != null and use_flag != ''">
+            AND tep.use_flag = #{use_flag}
+        </if>
+        <if test="progress_type != null and progress_type != ''">
+            AND tep.progress_type = #{progress_type}
+        </if>
+
+        <if test="(plan_start_date != null and plan_end_date != null)
+                    and (plan_start_date != '' and plan_end_date != '')">
+            <choose>
+                <when test="search_date_type != null and search_date_type != ''">
+                    <choose>
+                        <when test="search_date_type.equals('start')">
+                            AND plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </when>
+                        <otherwise>
+                            AND plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    AND (plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                    OR plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date})
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type.equals('title')">
+                        AND tep.title LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <when test="search_type.equals('document_id')">
+                        AND tep.id IN (SELECT plan_id
+                        FROM tb_education_plan_document tepd
+                        LEFT JOIN tb_document td on td.id = tepd.document_id
+                        where td.document_num LIKE CONCAT('%', #{search_txt}, '%'))
+                    </when>
+                    <otherwise>
+                        AND (
+                        tep.id IN (SELECT plan_id
+                        FROM tb_education_plan_document tepd
+                        LEFT JOIN tb_document td on td.id = tepd.document_id
+                        where td.document_num LIKE CONCAT('%', #{search_txt}, '%'))
+                        OR tep.title LIKE CONCAT('%', #{search_txt}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        ORDER BY plan_start_date desc, id desc
+        <if test="page != null">
+            OFFSET #{page.page_size} * (#{page.page_no} - 1) ROW
+            FETCH NEXT #{page.page_size} ROW ONLY
+        </if>
+    </select>
+
+    <!-- 교육계획 조회 -->
+    <select id="educationPlanDetail"
+            parameterType="com.innon.education.management.plan.repository.model.ManagementPlan"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanDTO">
+        SELECT tep.id
+	        , tep.title
+	        , tep.status
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.status AND delete_at != 'Y') AS status_nm
+	        , tep.edu_user_id
+	        , tep.group_id
+	        , (select title from tb_group tg where tg.id = tep.group_id) group_nm
+	        , (select user_nm from edu_insa ei where ei.user_id = tep.edu_user_id) edu_user_nm
+	        , tep.year
+	        , tep.month
+	        , tep.relation_num
+	        , tep.passing_rate
+	        , tep.edu_type
+	        , tep.job_qualified_id
+	        , tjt.title job_qualified_nm
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.edu_type AND delete_at != 'Y') AS edu_type_nm
+	        , CONVERT(CHAR(10), tep.plan_start_date, 23) AS plan_start_date
+	        , CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date
+	        , tep.approve_step
+	        , tep.question_num
+	        , tep.work_num
+	        , tep.course_id
+	        , tep.duty_category
+	        , tep.document_id
+	        , tep.proceed_type
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.proceed_type AND delete_at != 'Y') AS proceed_type_nm
+	        , tep.evaluation_type
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.evaluation_type AND delete_at != 'Y') AS evaluation_type_nm
+	        , tep.completion_type
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.completion_type AND delete_at != 'Y') AS completion_type_nm
+	        , tep.progress_type
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.progress_type AND delete_at != 'Y') AS progress_type_nm
+	        , tep.valid_date
+	        , tep.relation_system
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.relation_system AND delete_at != 'Y') AS relation_system_nm
+	        , tep.re_edu_cnt
+	        , tep.sys_reg_user_id
+	        , tep.parent_id
+	        , tep.use_flag
+	        , tep.state
+	        , ROW_NUMBER() OVER (ORDER BY tep.id) AS ROW_NO
+	        , COUNT(*) OVER() AS total_cnt
+	        , (SELECT discription FROM tb_code WHERE code_name = tep.state AND delete_at != 'Y') AS state_nm
+	        , tep.filepath
+	        , (select reason from tb_education_result ter where ter.plan_id = tep.id) report_reason
+	        , tjt.memo job_code
+        FROM tb_education_plan tep
+			left join tb_job_qualified tjq on tjq.id = tep.job_qualified_id
+			left join tb_job_type tjt on tjq.job_type_id = tjt.id
+        <choose>
+            <when test="qms_user_id != null and qms_user_id  !='' ">
+                LEFT JOIN tb_education_plan_user epu on epu.plan_id = tep.id and epu.delete_at != 'Y'
+                where epu.qms_user_id = #{qms_user_id}
+            </when>
+            <otherwise>
+                where 1=1
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="group_id != null and group_id > 0">
+                AND tep.group_id = #{group_id}
+            </when>
+            <otherwise>
+                <if test="groupList != null and groupList.size != 0">
+                    AND tep.group_id IN
+                    <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                        #{group.id}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+        <if test="id != null and id > 0">
+            AND tep.id = #{id}
+        </if>
+        <if test="parent_id != null and parent_id > 0">
+            AND tep.parent_id = #{parent_id}
+        </if>
+        <if test="status != null and status != '' ">
+            <choose>
+                <when test="status =='edus11003' ">
+                    and tep.status not in ( 'edus11001', 'edus11005')
+                    and tep.edu_type != 'edut11003'
+
+                </when>
+                <otherwise>
+                    AND tep.status = #{status}
+
+                </otherwise>
+            </choose>
+        </if>
+        <if test="title != null and title != ''">
+            AND tep.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="title != null and title != ''">
+            AND tep.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="edu_year != null and edu_year != ''">
+            AND tep.edu_year = #{edu_year}
+        </if>
+        <if test="edu_type != null and edu_type != ''">
+            AND tep.edu_type = #{edu_type}
+        </if>
+        <if test="document_id != null and document_id != ''">
+            AND tep.document_id LIKE CONCAT('%', #{document_id}, '%')
+        </if>
+        <if test="evaluation_type != null and evaluation_type != ''">
+            AND tep.evaluation_type = #{evaluation_type}
+        </if>
+        <if test="proceed_type != null and proceed_type != ''">
+            AND tep.proceed_type = #{proceed_type}
+        </if>
+        <if test="work_num != null and work_num != ''">
+            AND tep.work_num = #{work_num}
+        </if>
+        <if test="use_flag != null and use_flag != ''">
+            AND tep.use_flag = #{use_flag}
+        </if>
+        <if test="(plan_start_date != null and plan_end_date != null)
+                    and (plan_start_date != '' and plan_end_date != '')">
+            <choose>
+                <when test="search_date_type != null and search_date_type != ''">
+                    <choose>
+                        <when test="search_date_type.equals('start')">
+                            AND plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </when>
+                        <otherwise>
+                            AND plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    AND (plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                    OR plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date})
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND tep.${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (
+                        tep.document_id LIKE CONCAT('%', #{search_txt}, '%')
+                        OR tep.title LIKE CONCAT('%', #{search_txt}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND tep.${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (
+                        tep.document_id LIKE CONCAT('%', #{search_txt}, '%')
+                        OR tep.title LIKE CONCAT('%', #{search_txt}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        ORDER BY tep.id desc
+        <if test="page != null">
+            OFFSET #{page.page_size} * (#{page.page_no} - 1) ROW
+            FETCH NEXT #{page.page_size} ROW ONLY
+        </if>
+    </select>
+
+    <!-- 교육대상 조회 -->
+    <select id="findManagementPlanUser"
+            parameterType="int"
+            resultType="com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO">
+        SELECT tepu.plan_id
+        ,tepu.id
+        , ei.user_id
+        , tepu.qms_user_id
+        , (SELECT user_nm FROM edu_insa WHERE tepu.qms_user_id = user_id) AS qms_user_nm
+        , ei.user_nm
+        , ei.dept_cd
+        , ed.dept_cd
+        , ed.dept_nm
+        , dbo.FN_GET_EDUUSER_EDUSTATUS(tepu.qms_user_id, tep.id, tep.question_num) AS edu_status
+        FROM tb_education_plan_user tepu
+        left join edu_insa ei on ei.user_id = tepu.qms_user_id
+        left join edu_dept ed on ed.dept_cd = ei.dept_cd
+        INNER JOIN tb_education_plan tep
+        ON (tepu.plan_id = tep.id)
+        <where>
+            and tepu.delete_at != 'Y'
+            <if test="plan_id != null">
+                AND tepu.plan_id = #{plan_id}
+            </if>
+        </where>
+
+    </select>
+
+    <!-- 참고 URL 조회 -->
+    <select id="findManagementHelpUrl"
+            parameterType="int"
+            resultType="hashMap">
+        SELECT url_addr
+        , edu_contents
+        FROM tb_education_plan_content
+        <where>
+            and delete_at != 'Y'
+            <if test="plan_id != null">
+                AND plan_id = #{plan_id}
+            </if>
+        </where>
+
+    </select>
+
+    <!-- 문제정보 조회 -->
+    <select id="findQuestionInfo"
+            parameterType="int"
+            resultType="hashMap">
+        SELECT id
+        , plan_id
+        , qb_q_id
+        , question_num
+        , test_num
+        , question_type
+        , edu_type
+        , duty_category
+        , document_id
+        FROM tb_question_info
+        <where>
+            and delete_at != 'Y'
+            <if test="plan_id != null">
+                AND plan_id = #{plan_id}
+            </if>
+        </where>
+    </select>
+
+    <!-- 문제상세정보 조회 -->
+    <select id="findQuestionDetail"
+            parameterType="Object"
+            resultType="hashMap">
+        SELECT question_type
+        , edu_type
+        , duty_category
+        , document_id
+        , question_difficulty
+        , question_contents
+        , order_num
+        FROM tb_question_info_detail
+        <where>
+            <if test="plan_id != null">
+                AND question_info_id = #{questionInfo_id}
+            </if>
+        </where>
+    </select>
+
+    <!-- 교육계획 상태 수정 -->
+    <update id="updateEducationPlanStatus"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanEntity">
+        UPDATE tb_education_plan
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 교육계획 승인상태 변경 -->
+    <update id="updateEducationPlan"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanEntity">
+        UPDATE tb_education_plan
+        <set>
+            <if test="state != null and state != ''">
+                state = #{state},
+            </if>
+            <if test="progress_type != null and progress_type != ''">
+                progress_type = #{progress_type},
+            </if>
+            <if test="title != null and title != ''">
+                title = #{title},
+            </if>
+            <if test="status != null and status != ''">
+                status = #{status},
+            </if>
+            <if test="edu_user_id != null and edu_user_id != ''">
+                edu_user_id = #{edu_user_id},
+            </if>
+            <if test="year != null and year > 0">
+                year = #{year},
+            </if>
+            <if test="month != null and month > 0">
+                month = #{month},
+            </if>
+            <if test="edu_type != null and edu_type > ''">
+                edu_type = #{edu_type},
+            </if>
+            <if test="plan_start_date != null and plan_start_date > ''">
+                plan_start_date = #{plan_start_date},
+            </if>
+            <if test="plan_end_date != null and plan_end_date > ''">
+                plan_end_date = #{plan_end_date},
+            </if>
+
+            <if test="approve_step != null and approve_step != ''">
+                approve_step = #{approve_step},
+            </if>
+            <if test="question_num != null and question_num != ''">
+                question_num = #{question_num},
+            </if>
+            <if test="work_num != null and work_num != ''">
+                work_num = #{work_num},
+            </if>
+            <if test="course_id != null and course_id != ''">
+                course_id = #{course_id},
+            </if>
+            <if test="duty_category != null and duty_category != ''">
+                duty_category = #{duty_category},
+            </if>
+
+            <if test="proceed_type != null and proceed_type != ''">
+                proceed_type = #{proceed_type},
+            </if>
+            <if test="evaluation_type != null and evaluation_type != ''">
+                evaluation_type = #{evaluation_type},
+            </if>
+            <if test="completion_type != null and completion_type != ''">
+                completion_type = #{completion_type},
+            </if>
+
+            <if test="valid_date != null and valid_date != ''">
+                valid_date = #{valid_date},
+            </if>
+
+            <if test="relation_system != null and relation_system != ''">
+                relation_system = #{relation_system},
+            </if>
+            <if test="relation_num != null and relation_num != ''">
+                relation_num = #{relation_num},
+            </if>
+            <if test="passing_rate != null and passing_rate != ''">
+                passing_rate = #{passing_rate},
+            </if>
+            <if test="job_qualified_id != null and job_qualified_id != ''">
+                job_qualified_id = #{job_qualified_id},
+            </if>
+            <if test="job_revision_id != null and job_revision_id != ''">
+                job_revision_id = #{job_revision_id},
+            </if>
+            <if test="re_edu_cnt != null and re_edu_cnt > 0">
+                re_edu_cnt = #{re_edu_cnt},
+            </if>
+            <if test="parent_id != null and parent_id > 0">
+                parent_id = #{parent_id},
+            </if>
+            <if test="dept_cd != null and dept_cd > 0">
+                dept_cd = #{dept_cd},
+            </if>
+            <if test="dept_nm != null and dept_nm > 0">
+                dept_nm = #{dept_nm},
+            </if>
+            <if test="group_id != null and group_id > 0">
+                group_id = #{group_id},
+            </if>
+            <if test="use_flag != null and use_flag != ''">
+                use_flag = #{use_flag},
+            </if>
+
+            <if test="delete_at != null and delete_at != ''">
+                delete_at = #{delete_at},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+
+    <!-- QMS 관리 정보 등록 -->
+    <insert id="saveWorkManagement"
+            parameterType="com.innon.education.management.plan.repository.entity.WorkManagementEntity">
+        INSERT INTO tb_work_management (req_id,
+                                        status,
+                                        work_seq,
+                                        req_user_id)
+        VALUES (#{req_id},
+                #{status},
+                #{work_seq},
+                #{req_user_id})
+    </insert>
+
+    <!-- QMS 인터페이스 정의서 등록 -->
+    <!-- 미사용 됨 -->
+    <insert id="saveQmsRes" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.management.plan.repository.entity.PlanQmsEntity">
+        INSERT INTO IF_QMS_RES (process_id,
+                                process_no,
+                                work_num,
+                                work_seq,
+                                work_dtl_seq,
+                                title,
+                                edu_contents,
+                                edu_user_id,
+                                req_user_id,
+                                plan_start_date,
+                                plan_end_date,)
+        VALUES (#{process_id},
+                #{process_no},
+                #{work_num},
+                #{work_seq},
+                #{work_dtl_seq},
+                #{title},
+                #{edu_contents},
+                #{edu_user_id},
+                #{req_user_id},
+                #{plan_start_date},
+                #{plan_end_date})
+    </insert>
+
+    <!-- 사용자 현황 조회 -->
+    <select id="findUserEduCurrentList"
+            parameterType="com.innon.education.management.plan.repository.model.UserEduCurrent"
+            resultType="com.innon.education.management.plan.repository.dto.UserEduCurrentDTO">
+        SELECT ei.user_id
+        , ISNULL(B.CNT, 0) AS edu_cnt
+        , ei.user_nm
+        , ei.dept_cd
+        , ei.employee_num
+        , ei.email
+        , ei.cell_num
+        , (SELECT dept_nm FROM edu_dept WHERE dept_cd = ei.DEPT_CD) AS dept_nm
+        FROM edu_insa ei
+        INNER JOIN (
+        SELECT COUNT(tepu.id) AS CNT, tepu.qms_user_id
+        FROM tb_education_plan_user tepu
+        LEFT JOIN tb_education_plan tep ON tep.id = tepu.plan_id AND tep.use_flag != 'N'  AND tep.progress_type = 'comi1s51002'
+        where tepu.delete_at != 'Y'
+        <if test="(plan_start_date != null and plan_end_date != null)
+                    and (plan_start_date != '' and plan_end_date != '')">
+            <choose>
+                <when test="search_date_type != null and search_date_type != ''">
+                    <choose>
+                        <when test="search_date_type.equals('start')">
+                            AND plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </when>
+                        <otherwise>
+                            AND plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    AND (plan_start_date BETWEEN #{plan_start_date} AND #{plan_end_date}
+                    OR plan_end_date BETWEEN #{plan_start_date} AND #{plan_end_date})
+                </otherwise>
+            </choose>
+        </if>
+        GROUP BY tepu.qms_user_id
+        ) AS B
+        ON ei.user_id = B.qms_user_id
+        WHERE 1=1
+
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        <choose>
+                            <when test="search_type.equals('dept_nm')">
+                                AND (SELECT dept_nm FROM edu_dept WHERE dept_cd = ei.dept_cd) LIKE CONCAT('%',
+                                #{search_txt}, '%')
+                            </when>
+                            <otherwise>
+                                AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                            </otherwise>
+                        </choose>
+                    </when>
+                    <otherwise>
+                        AND (
+                        (SELECT dept_nm FROM edu_dept WHERE dept_cd = ei.dept_cd) LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.employee_num LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.email LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.cell_num LIKE CONCAT('%', #{search_txt}, '%')
+                        OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+
+        ORDER BY  ei.USER_NM asc
+    </select>
+
+
+    <select id="findManagementPlanDocument"
+            parameterType="int"
+            resultType="com.innon.education.library.document.repasitory.dto.DocumentDTO">
+        select tepd.id
+        , td.id AS d_id
+        , td.title
+        , td.document_num
+        , tepd.sys_reguser_id
+        , tepd.sys_reg_date
+        , td.write_user_id
+        , (SELECT user_nm FROM edu_insa WHERE user_id = td.write_user_id) AS write_user_nm
+        from tb_education_plan_document tepd
+        left join tb_document td on td.id = tepd.document_id AND td.use_flag = 'Y'
+        left join tb_revision_document trd ON (trd.document_id = td.id) AND trd.delete_at != 'Y'
+        <where>
+            and tepd.delete_at != 'Y'
+            <if test="plan_id != null">
+                AND tepd.plan_id = #{plan_id}
+            </if>
+        </where>
+    </select>
+
+
+    <update id="updatePlanUser"
+            parameterType="com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity">
+        update tb_education_plan_user
+        <set>
+            <if test="delete_at != null and delete_at != '' ">
+                delete_at = #{delete_at},
+            </if>
+            <if test="status != null and status != '' ">
+                status = #{status},
+            </if>
+            <if test="pass_yn != null and !pass_yn.equals('\u0000')">
+                pass_yn = #{pass_yn},
+            </if>
+            <if test="btn_visible != null and !btn_visible.equals('\u0000')">
+                btn_visible = #{btn_visible},
+            </if>
+        </set>
+        <where>
+            <if test="plan_id != null and plan_id > 0 ">
+                and plan_id = #{plan_id}
+            </if>
+            <if test="qms_user_id != null and qms_user_id !='' ">
+                and qms_user_id = #{qms_user_id}
+            </if>
+        </where>
+    </update>
+    <update id="updatePlanContent" parameterType="com.innon.education.management.plan.repository.entity.HelpUrlEntity">
+        update tb_education_plan_content
+        <set>
+            <if test="delete_at != null and delete_at != '' ">
+                delete_at = #{delete_at},
+            </if>
+        </set>
+        where plan_id = #{plan_id}
+    </update>
+    <update id="updateQuestionInfo" parameterType="com.innon.education.management.plan.repository.model.QuestionInfo">
+        update tb_question_info
+        <set>
+            <if test="delete_at != null and delete_at != '' ">
+                delete_at = #{delete_at},
+            </if>
+        </set>
+        where plan_id = #{plan_id}
+    </update>
+    <update id="updatePlanDocument" parameterType="com.innon.education.library.document.repasitory.dto.PlanDocument">
+        update tb_education_plan_document
+        <set>
+            <if test="delete_at != null and delete_at != '' ">
+                delete_at = #{delete_at},
+            </if>
+        </set>
+        where plan_id = #{plan_id}
+    </update>
+
+    <update id="deleteTempEducation"
+            parameterType="com.innon.education.management.plan.repository.model.ManagementPlan">
+        UPDATE tb_education_plan
+        <set>
+            delete_at = 'Y',
+            sys_upd_reg_date = getDate()
+        </set>
+        WHERE id = #{id}
+          AND use_flag = 'N'
+    </update>
+
+    <select id="educationPlanUserInfo"
+            parameterType="com.innon.education.management.plan.repository.model.ManagementPlan"
+            resultType="com.innon.education.management.plan.repository.dto.EducationPlanUserInfoDTO">
+        select btn_visible, status
+        from tb_education_plan_user
+        where plan_id = #{plan_id}
+        and qms_user_id = #{edu_user_id}
+    </select>
+
+</mapper>

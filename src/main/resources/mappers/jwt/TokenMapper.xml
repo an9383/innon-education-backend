@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- UserMapper.xml -->
+<mapper namespace="com.innon.education.auth.mapper.TokenMapper" >
+    <insert id="insertToken" parameterType="com.innon.education.jwt.dto.Token"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tokens(token, refresh_token, token_type, expired, revoked, user_id)
+        VALUES(
+        #{token},
+        #{refresh_token},
+        #{token_type},
+        #{expired},
+        #{revoked},
+        #{user_id}
+        )
+    </insert>
+    <select id="findTokens"
+            resultType="com.innon.education.jwt.dto.Token"
+            parameterType="com.innon.education.jwt.dto.Token">
+        SELECT top 1 id, token, refresh_token, token_type, expired,revoked,user_id
+        FROM tokens
+        <where>
+            <if test="refresh_token != null">AND refresh_token = #{refresh_token} </if>
+            <if test="token != null">AND token = #{token} </if>
+            <if test="user_id != null">AND user_id = #{user_id} </if>
+            <if test="expired != null">AND expired = #{expired} </if>
+            <if test="revoked != null">AND revoked = #{revoked} </if>
+        </where>
+    </select>
+
+    <update id="updateToken" parameterType="com.innon.education.jwt.dto.Token">
+        update tokens
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="revoked != null">revoked = #{revoked},</if>
+            <if test="expired != null">expired = #{expired},</if>
+        </trim>
+        where id = #{id}
+    </update>
+</mapper>

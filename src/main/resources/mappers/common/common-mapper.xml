@@ -1,0 +1,904 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.common.mapper.common-mapper">
+    <!-- 조직도 조회 -->
+    <select id="findEduDeptList" fetchSize="2000"
+            parameterType="com.innon.education.common.repository.entity.DeptEntity"
+            resultType="com.innon.education.common.repository.dto.EduDeptDTO">
+        SELECT ed.DEPT_CD as id,ed.DEPT_CD as uid
+        , ed.DEPT_CD
+        , ed.DEPT_NM
+        , ed.PARENT_DEPT_CD
+        , (SELECT DEPT_NM FROM EDU_DEPT WHERE DEPT_CD = ed.PARENT_DEPT_CD) AS PARENT_DEPT_NM
+        , ed.DEPT_LEVEL
+        , ed.DEPT_ORDER
+        , ed.USE_FLAG
+        , IIF(ed.USE_FLAG = '0', '미사용', '사용') AS USE_FLAG_NM
+        FROM edu_dept ed WITH(NOLOCK)
+        <where>
+            <if test="dept_cd != null and dept_cd != ''">
+                AND ed.dept_cd = #{dept_cd}
+            </if>
+            <if test="use_flag != null and use_flag != ''">
+                AND ed.use_flag = #{use_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (ed.dept_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    <if test="dept_cds != null and dept_cds.size != 0">
+                        AND ed.dept_cd IN
+                        <foreach collection="dept_cds" item="dept_cd" separator="," open="(" close=")">
+                            #{dept_cd}
+                        </foreach>
+                    </if>
+                    <if test="dept_order != null and dept_order > 0">
+                        AND dept_order = #{dept_order}
+                    </if>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY DEPT_ORDER, USE_FLAG, DEL_FLAG, dept_nm
+    </select>
+   <!-- <select id="findEduDeptList_back" fetchSize="2000"
+             parameterType="com.innon.education.common.repository.entity.DeptEntity"
+            resultType="com.innon.education.common.repository.dto.EduDeptDTO">
+        WITH edu_dept_CTE AS (
+        SELECT DEPT_NM as id
+        , DEPT_CD
+        , DEPT_NM
+        , PARENT_DEPT_CD
+        , DEPT_LEVEL
+        , DEPT_ORDER
+        , USE_FLAG
+        FROM edu_dept WITH(NOLOCK)
+        <where>
+            <if test="dept_cd != null and dept_cd != ''">
+                AND dept_cd = #{dept_cd}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (dept_nm LIKE CONCAT('%', #{search_txt}, '%')
+                            OR dept_cd LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    <choose>
+                        <when test="dept_cds != null and dept_cds.size != 0">
+                            AND dept_cd IN
+                            <foreach collection="dept_cds" item="dept_cd" separator="," open="(" close=")">
+                                #{dept_cd}
+                            </foreach>
+                        </when>
+                        <when test="dept_order > 0">
+                            AND dept_order = #{dept_order}
+                        </when>
+                        <otherwise>
+                            AND dept_order = 0
+                        </otherwise>
+                    </choose>
+                </otherwise>
+            </choose>
+        </where>
+        UNION ALL
+        SELECT
+        ed.DEPT_NM as id
+        , ed.DEPT_CD
+        , ed.DEPT_NM
+        , ed.PARENT_DEPT_CD
+        , ed.DEPT_LEVEL
+        , ed.DEPT_ORDER
+        , ed.USE_FLAG
+        FROM edu_dept ed
+        INNER JOIN edu_dept_CTE edc
+        ON edc.DEPT_CD = ed.PARENT_DEPT_CD
+        )
+        SELECT id
+        , edc.DEPT_CD
+        , edc.DEPT_NM
+        , edc.PARENT_DEPT_CD
+        , (SELECT DEPT_NM FROM EDU_DEPT WHERE edc.PARENT_DEPT_CD = DEPT_CD) AS PARENT_DEPT_NM
+        , edc.DEPT_LEVEL
+        , edc.DEPT_ORDER
+        , edc.USE_FLAG
+        , IIF(edc.USE_FLAG = '0', '미사용', '사용') AS USE_FLAG_NM
+        FROM edu_dept_CTE AS edc WITH(NOLOCK)
+        ORDER BY edc.DEPT_ORDER, edc.dept_nm
+    </select>-->
+    <select id="findEduDeptPopupList" fetchSize="2000"
+            parameterType="com.innon.education.common.repository.entity.DeptEntity"
+            resultType="com.innon.education.common.repository.dto.EduDeptDTO">
+        SELECT ed.DEPT_CD as id
+        , ed.DEPT_CD as uid
+        , ed.DEPT_CD
+        , ed.DEPT_NM
+        , PARENT_DEPT_CD
+        , DEPT_LEVEL
+        , DEPT_ORDER
+        , USE_FLAG
+        FROM edu_dept ed WITH(NOLOCK)
+        INNER JOIN (SELECT distinct(gd2.dept_cd)
+        FROM tb_group_dept gd
+        JOIN tb_group_dept gd2
+        ON gd.group_id = gd2.group_id
+        left join tb_group tg on tg.id = gd2.group_id
+        where 1=1
+        <if test="dept_cd != null and dept_cd != ''">
+            and gd.dept_cd = #{dept_cd}
+        </if>
+        and gd.delete_at != 'Y'
+        and gd2.delete_at != 'Y'
+        and tg.delete_at != 'Y'
+        <if test="group_id != null and group_id > 0">
+            and tg.id = #{group_id}
+        </if>
+        ) as g_cd on g_cd.dept_cd = ed.dept_cd
+        <where>
+            <if test="use_flag != null and use_flag != ''">
+                AND ed.use_flag = #{use_flag}
+            </if>
+            <if test="del_flag != null and del_flag != ''">
+                AND ed.del_flag = #{del_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type == 'dept_nm'">
+                            AND ed.dept_nm LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                    </choose>
+                </when>
+                <otherwise>
+                    <choose>
+                        <when test="dept_cds != null and dept_cds.size != 0">
+                            AND ed.dept_cd IN
+                            <foreach collection="dept_cds" item="dept_cd" separator="," open="(" close=")">
+                                #{dept_cd}
+                            </foreach>
+                        </when>
+                        <when test="dept_order > 0 and dept_cd ==null ">
+                            AND dept_order = #{dept_order}
+                        </when>
+                        <otherwise>
+
+                        </otherwise>
+                    </choose>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY DEPT_ORDER, dept_nm
+    </select>
+<!--todo 정주원 plant code-->
+    <!-- 하위 조직도 조회 -->
+    <select id="findChildEduDeptCdList"
+            parameterType="com.innon.education.common.repository.entity.DeptEntity"
+            resultType="com.innon.education.common.repository.dto.EduDeptDTO">
+        WITH edu_dept_CTE AS (
+            SELECT
+                DEPT_CD as id,
+                DEPT_CD as uid,
+                    DEPT_CD
+                 , DEPT_NM
+                 , PARENT_DEPT_CD
+
+                 , CONVERT(VARCHAR(500), DEPT_NM) AS NM_PATH
+                 , CONVERT(VARCHAR(500), DEPT_CD) AS CD_PATH
+                 , DEPT_LEVEL
+                 , DEPT_ORDER
+              FROM edu_dept WITH(NOLOCK)
+        <where>
+        <choose>
+            <when test="dept_cds!=null and dept_cds.size!=0">
+            AND DEPT_CD IN
+                 <foreach collection="dept_cds" item="dept_cd" separator="," open="(" close=")">
+                     #{dept_cd}
+                 </foreach>
+            </when>
+            <when test="dept_cd != null and dept_cd != ''">
+            AND DEPT_CD = #{dept_cd}
+            </when>
+            <otherwise>
+            </otherwise>
+        </choose>
+        </where>
+             UNION ALL
+            SELECT  ed.DEPT_CD AS id,ed.DEPT_CD AS uid,
+                    ed.DEPT_CD
+                 , ed.DEPT_NM
+                 , ed.PARENT_DEPT_CD
+
+                 , CONVERT(VARCHAR(500), edc.NM_PATH + '>' + ed.DEPT_NM) AS NM_PATH
+                 , CONVERT(VARCHAR(500), edc.CD_PATH + '>' + ed.DEPT_CD) AS CD_PATH
+                 , ed.DEPT_LEVEL
+                 , ed.DEPT_ORDER
+              FROM edu_dept ed
+             INNER JOIN edu_dept_CTE edc
+                ON edc.DEPT_CD = ed.PARENT_DEPT_CD
+        )
+        SELECT DEPT_CD
+          FROM edu_dept_CTE WITH(NOLOCK)
+         ORDER BY CD_PATH
+    </select>
+
+    <resultMap id="eduinsa" type="com.innon.education.common.repository.dto.EduInsaDTO">
+        <result property="user_id" column="USER_ID" />
+        <result property="plant_cd" column="plant_cd" />
+        <result property="dept_cd" column="DEPT_CD" />
+        <result property="user_nm" column="USER_NM" />
+        <result property="dept_nm" column="DEPT_NM" />
+        <result property="use_flag" column="USE_FLAG" />
+        <result property="use_flag_nm" column="USE_FLAG_NM" />
+        <result property="del_flag" column="DEL_FLAG" />
+        <result property="del_flag_nm" column="DEL_FLAG_NM" />
+        <result property="id" column="id" />
+        <result property="uid" column="uid" />
+    </resultMap>
+
+    <!-- 구성원 조회 todo 정주원 !-->
+    <select id="findEduInsaList" fetchSize="2000"
+            parameterType="com.innon.education.common.repository.entity.InsaEntity"
+            resultMap="eduinsa" >
+        select  insa.*,insa.user_id as id,insa.user_id as uid from(
+        SELECT
+        ei.USER_ID
+        , ei.COMPANY_CD
+        , ei.USER_TYPE
+        , ei.WORK_TYPE
+        , ei.USER_NM
+        , ei.DEPT_CD
+        , ei.USE_FLAG
+        , IIF(ei.USE_FLAG = 1, '사용', '미사용') AS USE_FLAG_NM
+        , ei.DEL_FLAG
+        , IIF(ei.DEL_FLAG = 0, '재직', '퇴사') AS DEL_FLAG_NM
+        , ed.DEPT_NM
+        , ei.EMPLOYEE_NUM
+        , ei.EMAIL
+        , ei.CELL_NUM
+        , ei.POSITION_CD
+        FROM edu_insa ei
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            <if test="edu_user_id != null and edu_user_id != '' ">
+                AND ei.user_id != #{edu_user_id}
+            </if>
+            <if test="dept_cd != null and dept_cd != '' ">
+                AND ei.dept_cd = #{dept_cd}
+                and ei.use_flag = 1
+                and ei.del_flag = 0
+                and ed.use_flag = 1
+                and ed.del_flag = 0
+            </if>
+            <if test="use_flag != null and use_flag != ''">
+                AND ei.use_flag = #{use_flag}
+                AND ed.use_flag = #{use_flag}
+            </if>
+            <if test="del_flag != null and del_flag != ''">
+                AND ei.del_flag = #{del_flag}
+                AND ed.del_flag = #{del_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            <choose>
+                                <when test="search_type.equals('dept_nm')">
+                                    AND ed.dept_nm LIKE CONCAT('%', #{search_txt}, '%')
+                                </when>
+                                <otherwise>
+                                    AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                                </otherwise>
+                            </choose>
+                        </when>
+                        <otherwise>
+                            AND (ei.USER_NM LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ed.DEPT_NM LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.EMAIL LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.USER_ID LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ) insa
+        <where>
+            <if test="dept_nm != null and dept_nm != ''">
+                AND insa.dept_nm LIKE CONCAT('%', #{dept_nm}, '%')
+            </if>
+        </where>
+        order by insa.use_flag desc , insa.del_flag, insa.dept_nm
+        <!--<if test="page != null">
+            OFFSET #{page_size} * (#{page_no} - 1) ROW
+            FETCH NEXT #{page_size} ROW ONLY
+        </if>-->
+    </select>
+
+    <select id="findEduInsaList_page" fetchSize="2000"
+            parameterType="com.innon.education.common.repository.entity.InsaEntity"
+            resultMap="eduinsa" >
+        select DISTINCT insa.*,insa.user_id as id,insa.user_id as uid from(
+        SELECT
+        ei.USER_ID
+        , ei.COMPANY_CD
+        , ei.USER_TYPE
+        , ei.WORK_TYPE
+        , ei.USER_NM
+        , ei.DEPT_CD
+        , ei.USE_FLAG
+        , IIF(ei.USE_FLAG = 1, '사용', '미사용') AS USE_FLAG_NM
+        , ei.DEL_FLAG
+        , IIF(ei.DEL_FLAG = 0, '재직', '퇴사') AS DEL_FLAG_NM
+        , ed.DEPT_NM
+        , ei.EMPLOYEE_NUM
+        , ei.EMAIL
+        , ei.CELL_NUM
+        , ei.POSITION_CD
+        , COUNT(*) OVER() AS total_cnt
+        , tgd.group_id
+
+        FROM edu_insa ei
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+        left join tb_group_dept tgd on tgd.dept_cd = ed.dept_cd and tgd.delete_at !='Y'
+        <where>
+            <if test="group_id != null  and group_id > 0 ">
+                AND tgd.group_id = #{group_id}
+            </if>
+            <if test="edu_user_id != null and edu_user_id != '' ">
+                AND ei.user_id != #{edu_user_id}
+            </if>
+            <if test="dept_cd != null and dept_cd != '' ">
+                AND ei.dept_cd = #{dept_cd}
+                and ei.use_flag = 1
+                and ei.del_flag = 0
+                and ed.use_flag = 1
+                and ed.del_flag = 0
+            </if>
+            <if test="use_flag != null and use_flag != ''">
+                AND ei.use_flag = #{use_flag}
+                AND ed.use_flag = #{use_flag}
+            </if>
+            <if test="del_flag != null and del_flag != ''">
+                AND ei.del_flag = #{del_flag}
+            </if>
+
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            <choose>
+                                <when test="search_type.equals('dept_nm')">
+                                    AND ed.dept_nm LIKE CONCAT('%', #{search_txt}, '%')
+                                </when>
+                                <otherwise>
+                                    AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                                </otherwise>
+                            </choose>
+                        </when>
+                        <otherwise>
+                            AND (ei.USER_NM LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ed.DEPT_NM LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.EMAIL LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.USER_ID LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ) insa
+        <where>
+            <if test="dept_nm != null and dept_nm != ''">
+                AND insa.dept_nm LIKE CONCAT('%', #{dept_nm}, '%')
+            </if>
+        </where>
+        <if test="group_id != null  and group_id > 0 ">
+            where insa.group_id= #{group_id}
+        </if>
+        order by insa.use_flag desc, insa.del_flag, insa.dept_nm
+
+        <if test="page != null">
+            OFFSET #{page.page_size} * (#{page.page_no} - 1) ROW
+            FETCH NEXT #{page.page_size} ROW ONLY
+        </if>
+    </select>
+
+    <select id="findEduPopupInsaList" fetchSize="2000"
+            parameterType="com.innon.education.common.repository.model.Insa"
+            resultMap="eduinsa" >
+        select insa.*,insa.dept_cd as id,insa.dept_cd as uid  from(
+        SELECT
+        ei.USER_ID
+        , ei.COMPANY_CD
+        , ei.USER_TYPE
+        , ei.WORK_TYPE
+        , ei.USER_NM
+        , ei.DEPT_CD
+        , ei.USE_FLAG
+        , IIF(ei.USE_FLAG = 1, '사용', '미사용') AS USE_FLAG_NM
+        , ei.DEL_FLAG
+        , IIF(ei.DEL_FLAG = 0, '재직', '퇴사') AS DEL_FLAG_NM
+        , (SELECT DEPT_NM FROM edu_dept WHERE dept_cd = ei.dept_cd) AS DEPT_NM
+        , ei.EMPLOYEE_NUM
+        , ei.EMAIL
+        , ei.CELL_NUM
+        , ei.POSITION_CD
+        FROM edu_insa ei
+        INNER JOIN (SELECT distinct(gd2.dept_cd)
+        FROM tb_group_dept gd
+        JOIN tb_group_dept gd2
+        ON gd.group_id = gd2.group_id
+        left join tb_group tg on tg.id = gd2.group_id
+        where 1=1
+        <if test="dept_cd != null and dept_cd != ''">
+            and gd.dept_cd = #{dept_cd}
+        </if>
+        and gd.delete_at != 'Y'
+        and gd2.delete_at != 'Y'
+        and tg.delete_at != 'Y'
+        ) AS tgd
+        on (ei.dept_cd = tgd.dept_cd)
+        <where>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        <choose>
+                            <when test="search_type.equals('dept_nm')">
+                                AND (SELECT DEPT_NM FROM edu_dept WHERE dept_cd = ei.dept_cd) LIKE CONCAT('%', #{search_txt}, '%')
+                            </when>
+                            <otherwise>
+                                AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                            </otherwise>
+                        </choose>
+                    </when>
+                    <otherwise>
+                        AND (ei.USER_NM LIKE CONCAT('%', #{search_txt}, '%')
+                        OR (SELECT DEPT_NM FROM edu_dept WHERE dept_cd = ei.dept_cd) LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        </where>
+        <if test="page != null">
+            <!--todo 정주원-->
+            <!--        OFFSET #{page_size} * (#{page_no} - 1) ROW-->
+            <!--         FETCH NEXT #{page_size} ROW ONLY-->
+        </if>
+        ) insa
+        <where>
+            AND del_flag != '1'
+            AND use_flag != '0'
+            <if test="dept_nm != null and dept_nm != ''">
+                AND insa.dept_nm LIKE CONCAT('%', #{dept_nm}, '%')
+            </if>
+            <choose>
+                <when test="plant_cd != '' and plant_cd != null">
+                    and  insa.plant_cd = #{plant_cd}
+                </when>
+                <otherwise>
+
+                </otherwise>
+            </choose>
+        </where>
+        order by insa.use_flag desc, insa.dept_nm
+    </select>
+
+    <!-- 구성원 목록 갯수 조회 -->
+    <select id="findEduInsaListCnt"
+            parameterType="com.innon.education.common.repository.entity.InsaEntity"
+            resultType="int">
+        SELECT COUNT(ei.USER_ID)
+          FROM edu_insa ei
+         WHERE 1=1
+        <if test="dept_cds != null and dept_cds.size > 0">
+            AND ei.DEPT_CD IN
+            <foreach collection="dept_cds" item="dept_cd" separator="," open="(" close=")">
+                #{dept_cd}
+            </foreach>
+        </if>
+        <if test="dept_cd != null and dept_cd != ''">
+          AND dept_cd = #{dept_cd}
+        </if>
+    </select>
+
+    <select id="findEduInsaListCustom"
+            parameterType="com.innon.education.common.repository.entity.InsaEntity"
+            resultType="com.innon.education.common.repository.dto.EduInsaDTO">
+        select fei.* (
+        SELECT ei.USER_ID
+        , ei.COMPANY_CD
+        , ei.USER_TYPE
+        , ei.WORK_TYPE
+        , ei.USER_NM
+        , ei.DEPT_CD
+
+        , (SELECT DEPT_NM FROM edu_dept WHERE dept_cd = ei.dept_cd) AS DEPT_NM
+        , ei.EMPLOYEE_NUM
+        , ei.EMAIL
+        , ei.CELL_NUM
+        , ei.POSITION_CD
+        FROM edu_insa ei
+        <where>
+            <if test="dept != null and dept != '' ">
+             and ei.DEPT_CD = #{dept}
+            </if>
+        </where>
+        ) as fei
+        <where>
+            <choose>
+                <when test="plant_cd != '' or plant != null">
+                    and  fei.plant_cd = #{plant_cd}
+                </when>
+                <otherwise>
+
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY fei.DEPT_CD
+    </select>
+
+    <!-- 유저아이디 기준 공장코드 조회 -->
+    <select id="findFactoryCdByUserId"
+            parameterType="String"
+            resultType="String">
+        WITH edu_dept_CTE AS (
+            SELECT DEPT_CD
+                 , DEPT_NM
+                 , PARENT_DEPT_CD
+                 , DEPT_ORDER
+            FROM edu_dept WITH(NOLOCK)
+        WHERE DEPT_CD = (
+            SELECT DEPT_CD
+            FROM edu_insa
+            WHERE USER_ID = #{user_id}
+            )
+        UNION ALL
+        SELECT ed.DEPT_CD
+             , ed.DEPT_NM
+             , ed.PARENT_DEPT_CD
+             , ed.DEPT_ORDER
+        FROM edu_dept ed
+                 INNER JOIN edu_dept_CTE edc
+                            ON (ed.DEPT_CD = edc.PARENT_DEPT_CD)
+            )
+        SELECT DEPT_CD
+        FROM edu_dept_CTE WITH(NOLOCK)
+        WHERE DEPT_ORDER = 3
+    </select>
+
+    <!-- 부서코드 기준 상위부서 조회 -->
+    <select id="findTopDeptByDeptCd"
+            parameterType="String"
+            resultType="com.innon.education.common.repository.model.Dept">
+        WITH edu_dept_CTE AS (
+            SELECT DEPT_CD
+                 , DEPT_NM
+                 , PARENT_DEPT_CD
+                 , DEPT_ORDER
+                 , USE_FLAG
+            FROM edu_dept WITH(NOLOCK)
+        WHERE DEPT_CD = #{dept_cd}
+        UNION ALL
+        SELECT ed.DEPT_CD
+             , ed.DEPT_NM
+             , ed.PARENT_DEPT_CD
+             , ed.DEPT_ORDER
+             , ed.USE_FLAG
+        FROM edu_dept ed
+                 INNER JOIN edu_dept_CTE edc
+                            ON (ed.DEPT_CD = edc.PARENT_DEPT_CD)
+            )
+       SELECT edc.DEPT_CD
+         FROM edu_dept_CTE edc WITH(NOLOCK)
+        WHERE edc.USE_FLAG != '0'
+          AND DEPT_ORDER >= 2
+        ORDER BY DEPT_ORDER DESC
+    </select>
+
+
+    <!-- 유저아이디 기준 공장코드 조회 -->
+    <select id="findAllDepth"
+            parameterType="String"
+            resultType="String">
+        SELECT
+        STUFF((
+        SELECT ','+ DEPT_CD
+        FROM EDU_DEPT
+        FOR XML PATH('')
+        ), 1, 1, '') AS DEPT_CD
+    </select>
+
+    <!-- 로그 등록 -->
+    <insert id="saveLog" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.common.repository.entity.LogEntity">
+        INSERT INTO tb_log (
+            table_id,
+            page_nm,
+            url_addr,
+            state,
+            reg_user_id,
+            sys_reg_date,
+            type
+        ) VALUES (
+            #{table_id},
+            #{page_nm},
+            #{url_addr},
+            #{state},
+            #{reg_user_id},
+            getDate(),
+            #{type}
+
+        )
+    </insert>
+
+    <!-- 로그 상세정보 등록 -->
+    <insert id="saveLogDetail"
+            parameterType="com.innon.education.common.repository.entity.LogChild">
+        INSERT INTO tb_log_detail (
+            log_id,
+            field,
+            before_value,
+            new_value,
+            reg_user_id,
+            sys_reg_date
+        ) VALUES (
+            #{log_id},
+            #{field},
+            #{before_value},
+            #{new_value},
+            #{reg_user_id},
+            getDate()
+        )
+    </insert>
+
+    <!-- 로그 조회 -->
+    <select id="findLogList"
+            parameterType="com.innon.education.common.repository.entity.LogEntity"
+            resultType="com.innon.education.common.repository.dto.LogDTO">
+        SELECT tl.id
+        , tl.table_id
+        , tl.page_nm
+        , tl.url_addr
+        , tl.state
+        , tl.reg_user_id
+        , tl.sys_reg_date
+        , CONVERT(CHAR(19), tl.sys_reg_date, 20) AS convert_reg_date
+        , tld.field
+        , tld.before_value
+        , tld.new_value
+        FROM tb_log tl
+        LEFT JOIN tb_log_detail tld on tld.log_id = tl.id
+         <where>
+             <if test="type != null and type != ''">
+                 AND tl.type = #{type}
+             </if>
+             <if test="state != null and state != ''">
+                 AND tl.state = #{state}
+             </if>
+             <if test="page_nm != null and page_nm != ''">
+                 AND tl.page_nm = #{page_nm}
+             </if>
+             <if test="table_id != null and table_id != ''">
+                 AND tl.table_id = #{table_id}
+             </if>
+             <if test="url_addr != null and url_addr != ''">
+                 AND tl.url_addr LIKE CONCAT('%', #{url_addr}, '%')
+             </if>
+             <choose>
+             <when test="search_txt != null and search_txt != ''">
+                 <choose>
+                     <when test="search_type != null and search_type != ''">
+                         AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                     </when>
+                     <otherwise>
+                         AND (tl.url_addr LIKE CONCAT('%', #{search_txt}, '%')
+                         OR tl.reg_user_id LIKE CONCAT('%', #{search_txt}, '%'))
+                     </otherwise>
+                 </choose>
+             </when>
+             <otherwise>
+
+             </otherwise>
+
+             </choose>
+         </where>
+    </select>
+
+    <!-- 로그 조회 -->
+    <select id="findLogDetailList"
+            parameterType="com.innon.education.common.repository.entity.LogEntity"
+            resultType="com.innon.education.common.repository.entity.LogChild">
+        SELECT id
+        ,before_value
+        ,new_value
+        ,field
+        FROM tb_log
+        <where>
+            <if test="id != null and id != ''">
+                AND log_id = #{log_id}
+            </if>
+        </where>
+    </select>
+
+    <!-- 로그 조회 -->
+<!--    <select id="findLogList"-->
+<!--            parameterType="com.innon.education.common.repository.entity.LogEntity"-->
+<!--            resultType="com.innon.education.common.repository.dto.LogDTO">-->
+<!--        SELECT tl.id-->
+<!--        , table_id-->
+<!--        , page_nm-->
+<!--        , url_addr-->
+<!--        , state-->
+<!--        , tl.reg_user_id-->
+<!--        , tl.sys_reg_date-->
+<!--        , CONVERT(CHAR(10), tl.sys_reg_date, 23) AS convert_reg_date-->
+<!--        ,tld.before_value-->
+<!--        ,tld.new_value-->
+<!--        ,tld.field-->
+<!--        FROM tb_log tl-->
+<!--        LEFT JOIN tb_log_detail tld on tld.log_id = tl.id-->
+<!--        WHERE tl.page_nm = 'adminDocument'-->
+<!--        and tl.table_id = 7530-->
+
+<!--        <if test="state != null and state != ''">-->
+<!--            AND state = #{state}-->
+<!--        </if>-->
+<!--        <if test="url_addr != null and url_addr != ''">-->
+<!--            AND url_addr LIKE CONCAT('%', #{url_addr}, '%')-->
+<!--        </if>-->
+<!--        <choose>-->
+<!--            <when test="search_txt != null and search_txt != ''">-->
+<!--                <choose>-->
+<!--                    <when test="search_type != null and search_type != ''">-->
+<!--                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')-->
+<!--                    </when>-->
+<!--                    <otherwise>-->
+<!--                        AND (url_addr LIKE CONCAT('%', #{search_txt}, '%')-->
+<!--                        OR reg_user_id LIKE CONCAT('%', #{search_txt}, '%'))-->
+<!--                    </otherwise>-->
+<!--                </choose>-->
+<!--            </when>-->
+<!--            <otherwise>-->
+
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </select>-->
+
+    <update id="updateInsa"
+            parameterType="com.innon.education.common.repository.model.Insa">
+        UPDATE edu_insa
+         <set>
+             <if test="password != null"> password = #{password},</if>
+             <if test="pw_reset_date != null">pw_reset_date = #{pw_reset_date},</if>
+             <if test="pw_wrong_cnt != null">pw_wrong_cnt = #{pw_wrong_cnt},</if>
+             <if test="pw_reset_flag != null">pw_reset_flag = #{pw_reset_flag},</if>
+             <if test="last_login_date != null"> last_login_date = #{last_login_date},</if>
+             <if test="use_flag != null and use_flag != ''">use_flag = #{use_flag},</if>
+         </set>
+        <where>
+            <if test="user_id != null and user_id != ''">
+                AND user_id = #{user_id}
+            </if>
+            <if test="dept_cd != null and dept_cd != ''">
+                AND dept_cd = #{dept_cd}
+            </if>
+            and del_flag =0
+        </where>
+    </update>
+
+    <update id="updateDept"
+            parameterType="com.innon.education.common.repository.model.Dept">
+        UPDATE edu_dept
+        <set>
+            <if test="use_flag != null and use_flag != ''">use_flag = #{use_flag},</if>
+        </set>
+        WHERE dept_cd = #{dept_cd}
+    </update>
+
+    <select id="findGroupInfoByDeptCd"
+            parameterType="String"
+            resultType="com.innon.education.admin.group.repository.Group">
+        SELECT id
+             , title
+             , memo
+        FROM tb_group
+        WHERE id IN (
+            SELECT DISTINCT(gd2.group_id)
+              FROM tb_group_dept gd
+              LEFT JOIN tb_group_dept gd2
+                ON gd.group_id = gd2.group_id
+              LEFT JOIN tb_group tg
+                ON tg.id = gd2.group_id
+            <where>
+                <if test="dept_cd != null and dept_cd != ''">
+               AND gd.dept_cd = #{dept_cd}
+                </if>
+               AND gd.delete_at != 'Y'
+               AND gd2.delete_at != 'Y'
+               AND tg.delete_at != 'Y'
+            </where>
+            )
+    </select>
+
+    <insert id="saveLoginInfo" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.common.repository.model.Login">
+        INSERT INTO tb_login (
+            user_id,
+            login_date,
+            login_type,
+            sys_reg_date
+        ) VALUES (
+            #{user_id},
+            getDate(),
+            #{login_type},
+            getDate()
+        )
+    </insert>
+
+    <insert id="saveEmailOtp" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.common.repository.model.Email">
+        INSERT INTO tb_email (
+            sender,
+            receiver,
+            send_date,
+            success_code,
+            otp,
+            sys_reg_date,
+            use_flag
+        ) VALUES (
+            #{sender},
+            #{receiver},
+            getDate(),
+            #{success_code},
+            #{otp},
+            getDate(),
+            #{use_flag}
+        )
+    </insert>
+
+    <select id="findEmailOtp"
+            parameterType="com.innon.education.common.repository.model.Email"
+            resultType="com.innon.education.common.repository.model.Email">
+        SELECT TOP 1 te.id
+             , te.sender
+             , te.receiver
+             , te.send_date
+             , te.success_code
+             , te.otp
+             , te.sys_reg_date
+             , CONVERT(CHAR(10), te.sys_reg_date, 23) AS convert_reg_date
+             , te.use_flag
+          FROM tb_email te
+        <where>
+            <if test="receiver != null and receiver != ''">
+                AND te.receiver = #{receiver}
+            </if>
+        </where>
+         ORDER BY te.sys_reg_date DESC
+    </select>
+
+    <update id="updateEmailOtpFlag"
+            parameterType="com.innon.education.common.repository.model.Email">
+        UPDATE tb_email
+           SET use_flag = #{use_flag}
+         WHERE receiver = #{receiver}
+           AND otp = #{otp}
+    </update>
+</mapper>

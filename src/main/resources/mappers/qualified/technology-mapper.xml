@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.qualified.mapper.technology-mapper">
+    <!-- 직무기술 등록 -->
+    <insert id="saveQualifiedTechnology"
+            parameterType="com.innon.education.qualified.technology.repository.entity.TechnologyEntity">
+        INSERT INTO tb_job_qualified_education_user(
+            job_code,
+            qualified_id,
+        <if test="dept_code != null and dept_code != ''">
+            dept_code,
+        </if>
+        <if test="status != null and status != ''">
+            status,
+        </if>
+        <if test="qualified_yn != null and qualified_yn != ''">
+            qualified_yn,
+        </if>
+            user_id
+        ) VALUES (
+            #{job_code},
+            #{qualified_id},
+        <if test="dept_code != null and dept_code != ''">
+            #{dept_code},
+        </if>
+        <if test="status != null and status != ''">
+            #{status},
+        </if>
+        <if test="qualified_yn != null and qualified_yn != ''">
+            #{qualified_yn},
+        </if>
+            #{user_id}
+        )
+    </insert>
+
+    <!-- 직무기술 조회 -->
+    <select id="findQualifiedTechnologyList"
+            parameterType="com.innon.education.qualified.technology.repository.entity.TechnologySearchEntity"
+            resultType="com.innon.education.qualified.technology.repository.dto.TechnologyDTO">
+        SELECT job_code
+             , qualified_id
+             , dept_code
+             , status
+             , qualified_yn
+             , user_id
+          FROM tb_job_qualified_education_user
+         WHERE 1=1
+        <if test="job_code != null and job_code != ''">
+           AND job_code = #{job_code}
+        </if>
+        <if test="qualified_id != null and qualified_id > 0">
+           AND qualified_id = #{qualified_id}
+        </if>
+        <if test="dept_list != null and dept_list.size > 0">
+           AND dept_code IN
+            <foreach collection="dept_list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="status != null and !status.equals('\u0000')">
+           AND status = #{status}
+        </if>
+        <if test="qualified_yn != null and !qualified_yn.equals('\u0000')">
+           AND qualified_yn = #{qualified_yn}
+        </if>
+        <if test="user_id != null and user_id != ''">
+           AND user_id = #{user_id}
+        </if>
+    </select>
+</mapper>

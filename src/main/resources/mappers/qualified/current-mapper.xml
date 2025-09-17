@@ -1,0 +1,878 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.qualified.mapper.current-mapper">
+	<!-- 직무요구서 등록 -->
+	<insert id="saveJobRequest"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRequest">
+		<selectKey keyProperty="id" resultType="int" order="AFTER">
+			DECLARE @id INT
+			IF EXISTS (
+			   SELECT id
+				 FROM tb_job_qualified
+				WHERE id = #{id}
+			)
+				BEGIN
+					SELECT @id = #{id}
+				END
+			ELSE
+				BEGIN
+					SELECT @id = MAX(id) FROM tb_job_qualified
+				END
+			SELECT @id AS id
+		</selectKey>
+		MERGE INTO tb_job_qualified AS target
+		USING (SELECT 1 AS DUM) AS src
+		   ON (target.id = #{id})
+		 WHEN MATCHED THEN
+	   UPDATE SET group_id = #{group_id}
+			, job_type_id = #{job_type_id}
+			, memo = #{memo}
+			, certi_month = #{certi_month}
+			, sys_upd_user_id = #{sys_reg_user_id}
+			, sys_upd_reg_date = getDate()
+			, status = #{status}
+		 WHEN NOT MATCHED THEN
+	   INSERT (
+			job_type_id,
+			group_id,
+			memo,
+			version,
+			qualified_yn,
+			certi_month,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date,
+			status
+	   ) VALUES (
+			#{job_type_id}
+		  , #{group_id}
+		  , #{memo}
+		  , #{version}
+		  , #{qualified_yn}
+		  , #{certi_month}
+		  , 'Y'
+		  , 'N'
+		  , #{sys_reg_user_id}
+		  , getDate()
+		  , #{status}
+	   );
+	</insert>
+	<insert id="saveJobRequest_back" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRequest">
+		INSERT INTO tb_job_qualified (
+			job_type_id,
+			group_id,
+			memo,
+			version,
+			qualified_yn,
+			certi_month,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+			 #{job_type_id}
+		   , #{group_id}
+		   , #{memo}
+		   , #{version}
+		   , #{qualified_yn}
+		   , #{certi_month}
+		   , 'Y'
+		   , 'N'
+		   , #{sys_reg_user_id}
+		   , getDate()
+		)
+	</insert>
+
+	<!-- 직무버전 등록 -->
+	<insert id="saveJobRevision"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRevision">
+		<selectKey keyProperty="id" resultType="int" order="AFTER">
+			DECLARE @id INT
+			IF EXISTS (
+				SELECT id
+				  FROM tb_job_revision
+				 WHERE id = #{id}
+				   AND qualified_id = #{qualified_id}
+			)
+				BEGIN
+					SELECT @id = #{id}
+				END
+			ELSE
+				BEGIN
+					SELECT @id = MAX(id) FROM tb_job_revision
+				END
+			SELECT @id AS id
+		</selectKey>
+		MERGE INTO tb_job_revision AS target
+		USING (SELECT 1 AS DUM) AS src
+		   ON (target.id = #{id} AND target.qualified_id = #{qualified_id})
+		 WHEN MATCHED THEN
+	   UPDATE SET purpose = #{purpose}
+			, reason = #{reason}
+			, mandate = #{mandate}
+			, content = #{content}
+			, use_flag = #{use_flag}
+			, sys_reg_user_id = #{sys_reg_user_id}
+			, sys_reg_date = getDate()
+		 WHEN NOT MATCHED THEN
+	   INSERT (
+			qualified_id,
+			purpose,
+			reason,
+			mandate,
+			content,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date,
+			purpose_tx,
+			main_duty_task,
+			education,
+			major,
+			career,
+			license,
+			capability,
+			pq,
+			language_tx,
+			healthy,
+			training,
+			superior,
+			co_worker,
+			junior,
+			deputy,
+			internal,
+			external_tx
+		) VALUES (
+			#{qualified_id},
+			#{purpose},
+			#{reason},
+			#{mandate},
+			#{content},
+			#{use_flag},
+			#{delete_at},
+			#{sys_reg_user_id},
+			getDate()
+			, #{purpose_tx}
+			, #{main_duty_task}
+			, #{education}
+			, #{major}
+			, #{career}
+			, #{license}
+			, #{capability}
+			, #{pq}
+			, #{language_tx}
+			, #{healthy}
+			, #{training}
+			, #{superior}
+			, #{co_worker}
+			, #{junior}
+			, #{deputy}
+			, #{internal}
+			, #{external_tx}
+		);
+	</insert>
+	<insert id="saveJobRevision_back" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRevision">
+		INSERT INTO tb_job_revision (
+			qualified_id,
+			purpose,
+			reason,
+			mandate,
+			content,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+					 #{qualified_id},
+					 #{purpose},
+					 #{reason},
+					 #{mandate},
+					 #{content},
+					 #{use_flag},
+					 #{delete_at},
+					 #{sys_reg_user_id},
+					 getDate()
+				 )
+	</insert>
+
+	<update id="updateRevisionDocument"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionDocument" >
+		UPDATE tb_revision_document
+		<set>
+			<if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+		</set>
+		<where>
+			<if test="revision_id != null and revision_id > 0">
+				and revision_id = #{revision_id}
+			</if>
+
+		</where>
+	</update>
+
+	<update id="updateRevisionContent"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionContent" >
+		UPDATE tb_revision_content
+		<set>
+			<if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+		</set>
+		<where>
+			<if test="revision_id != null and revision_id > 0">
+				and revision_id = #{revision_id}
+			</if>
+		</where>
+	</update>
+
+	<update id="updateJobRevision"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRevision" >
+		UPDATE tb_job_revision
+		<set>
+			<if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+			<if test="purpose !=null and purpose !=''">,purpose = #{purpose}</if>
+			<if test="use_flag !=null and use_flag !=''">,use_flag = #{use_flag}</if>
+			<if test="reason !=null and reason !=''">,reason = #{reason}</if>
+			<if test="mandate !=null and mandate !=''">,mandate = #{mandate}</if>
+			<if test="content !=null and content !=''">,content = #{content}</if>
+		</set>
+		<where>
+			<if test="id != null and id > 0">
+				and id = #{id}
+			</if>
+
+			<if test="qualified_id != null and qualified_id > 0">
+				and qualified_id = #{qualified_id}
+			</if>
+		</where>
+	</update>
+
+	<update id="updateJobSkill"
+			parameterType="com.innon.education.qualified.current.repository.entity.JobSkillEntity" >
+		UPDATE tb_job_skill
+		<set>
+			<if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+			<if test="job_content !=null and job_content !=''">,job_content = #{job_content}</if>
+			<if test="use_flag !=null and use_flag !=''">,use_flag = #{use_flag}</if>
+			<if test="version !=null and version !=''">,version = #{version}</if>
+		</set>
+		<where>
+			<if test="id != null and id > 0">
+				and id = #{id}
+			</if>
+			<if test="id != null and id > 0">
+				and id = #{id}
+			</if>
+		</where>
+	</update>
+
+	<update id="updateJobSKillItem"
+			parameterType="com.innon.education.qualified.current.repository.entity.JobSkillItemEntity" >
+		UPDATE tb_job_skill_item
+		<set>
+			<if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+			<if test="skill_memo !=null and skill_memo !=''">,skill_memo = #{skill_memo}</if>
+			<if test="mandate_user_id !=null and mandate_user_id !='' ">,mandate_user_id = #{mandate_user_id}</if>
+		</set>
+		<where>
+			<if test="id != null and id > 0">
+				and id = #{id}
+			</if>
+		</where>
+	</update>
+
+	<!-- 직무버전 등록 -->
+	<insert id="saveJobSkill" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.entity.JobSkillEntity">
+		INSERT INTO tb_job_skill (
+		job_content,
+		skill_user_id,
+		use_flag,
+		sys_reg_user_id,
+		group_id,
+		reports_to,
+		deputy,
+		education,
+		major,
+		career
+		) VALUES (
+		#{job_content},
+		#{skill_user_id},
+		#{use_flag},
+		#{sys_reg_user_id},
+		#{group_id},
+		#{reports_to},
+		#{deputy},
+		#{education},
+		#{major},
+		#{career}
+		)
+	</insert>
+
+	<insert id="saveJobSkillItem" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.entity.JobSkillItemEntity">
+		INSERT INTO tb_job_skill_item (
+		job_skill_id,
+		plan_id,
+		job_revision_id,
+
+		plan_end_date,
+		skill_expired_date,
+		mandate_user_id,
+
+		sys_reg_user_id
+
+		) VALUES (
+		#{job_skill_id},
+		#{plan_id},
+		#{jv_id},
+
+
+		CONVERT(CHAR(10), #{plan_end_date}, 23) ,
+		CONVERT(CHAR(10), #{skill_expired_date}, 23) ,
+		#{mandate_user_id},
+
+		#{sys_reg_user_id}
+
+		)
+	</insert>
+
+
+	<!-- 버전별 교육내용 등록 -->
+	<insert id="saveRevisionContent"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionContent">
+		<selectKey keyProperty="id" resultType="int" order="AFTER">
+			DECLARE @id INT
+			IF EXISTS (
+				SELECT id
+				  FROM tb_revision_content
+				 WHERE id = #{id}
+				   AND qualified_id = #{qualified_id}
+				   AND revision_id = #{revision_id}
+			)
+			BEGIN
+				SELECT @id = #{id}
+			END
+			ELSE
+			BEGIN
+				SELECT @id = MAX(id) FROM tb_revision_content
+			END
+			SELECT @id AS id
+		</selectKey>
+		MERGE INTO tb_revision_content AS target
+		USING (SELECT 1 AS DUM) AS src
+		   ON (target.id = #{id} AND target.qualified_id = #{qualified_id} AND target.revision_id = #{revision_id})
+		 WHEN MATCHED THEN
+	   UPDATE SET group_id = #{group_id}
+			, content = #{content}
+			, delete_at = 'N'
+			, sys_reg_user_id = #{sys_reg_user_id}
+			, sys_reg_date = getDate()
+		 WHEN NOT MATCHED THEN
+	   INSERT (
+			qualified_id,
+			revision_id,
+			group_id,
+			content,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+			#{qualified_id},
+			#{revision_id},
+			#{group_id},
+			#{content},
+			'Y',
+			'N',
+			#{sys_reg_user_id},
+			getDate()
+		);
+	</insert>
+	<insert id="saveRevisionContent_back" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionContent">
+		INSERT INTO tb_revision_content (
+			qualified_id,
+			revision_id,
+			group_id,
+			content,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+					 #{qualified_id},
+					 #{revision_id},
+					 #{group_id},
+					 #{content},
+					 'Y',
+					 'N',
+					 #{sys_reg_user_id},
+					 getDate()
+				 )
+	</insert>
+
+	<!-- 버전별 문서 등록 -->
+	<insert id="saveRevisionDocument"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionDocument">
+		<selectKey keyProperty="id" resultType="int" order="AFTER">
+			DECLARE @id INT
+			IF EXISTS (
+				SELECT id
+				  FROM tb_revision_document
+				 WHERE id = #{id}
+				   AND revision_id = #{revision_id}
+				   AND document_id = #{d_id}
+			)
+			BEGIN
+				SELECT @id = #{id}
+			END
+			ELSE
+			BEGIN
+				SELECT @id = MAX(id) FROM tb_revision_document
+			END
+			SELECT @id AS id
+		</selectKey>
+		MERGE INTO tb_revision_document AS target
+		USING (SELECT 1 AS DUM) AS src
+		   ON (target.id = #{id} AND target.revision_id = #{revision_id} AND target.document_id = #{d_id})
+		 WHEN MATCHED THEN
+	   UPDATE SET group_id = #{group_id}
+			, delete_at = 'N'
+			, sys_reg_user_id = #{sys_reg_user_id}
+			, sys_reg_date = getDate()
+		 WHEN NOT MATCHED THEN
+	   INSERT (
+			revision_id,
+			document_id,
+			group_id,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+			#{revision_id},
+			#{d_id},
+			#{group_id},
+			'Y',
+			'N',
+			#{sys_reg_user_id},
+			getDate()
+		);
+	</insert>
+	<insert id="saveRevisionDocument_back" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.innon.education.qualified.current.repository.model.RevisionDocument">
+		INSERT INTO tb_revision_document(
+			revision_id,
+			document_id,
+			group_id,
+			use_flag,
+			delete_at,
+			sys_reg_user_id,
+			sys_reg_date
+		) VALUES (
+					 #{revision_id},
+					 #{d_id},
+					 #{group_id},
+					 'Y',
+					 'N',
+					 #{sys_reg_user_id},
+					 getDate()
+				 )
+	</insert>
+
+	<!-- 직무요구 목록 조회 -->
+	<select id="findJobRequestList"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRequest"
+			resultType="com.innon.education.qualified.current.repository.dto.JobRequestDTO">
+		SELECT tjq.id
+			 , tjq.job_type_id
+			 , tjt.title AS job_title
+			 , tjq.group_id
+			 , (SELECT title FROM tb_group WHERE id = tjq.group_id AND delete_at != 'Y') AS group_nm
+			 , tps.sign_id
+			 , (SELECT discription FROM tb_code WHERE code_name = tps.status AND delete_at != 'Y') AS status_nm
+			 , tjq.status AS qualified_status
+			 , IIF(tjq.status = 'T', '임시저장', '저장') AS qualified_status_nm
+			 , tjq.memo
+			 , tjq.version
+			 , tjq.qualified_yn
+			 , tjq.certi_month
+			 , IIF(tjq.qualified_yn = 'Y', '적합', '부적합') AS qualified_nm
+			 , tjq.use_flag
+			 , tjq.sys_reg_user_id
+			 , (SELECT user_nm FROM edu_insa WHERE user_id = tjq.sys_reg_user_id) AS sys_reg_user_nm
+			 , tjq.sys_reg_date
+			 , CONVERT(CHAR(10), tjq.sys_reg_date, 23) AS convert_reg_date
+		  FROM tb_job_qualified tjq
+		 INNER JOIN tb_job_type tjt
+			ON (tjq.job_type_id = tjt.id)
+		  LEFT JOIN tb_plan_sign tps
+			ON (tps.plan_id = tjq.id AND sign_category_type = 'edut11003')
+		<where>
+		   AND tjq.delete_at != 'Y'
+		  <if test="job_title != null and job_title != ''">
+		   AND tjt.title LIKE CONCAT('%', #{job_title}, '%')
+		  </if>
+		  <if test="memo != null and memo != ''">
+		   AND tjq.memo LIKE CONCAT('%', #{memo}, '%')
+		  </if>
+<!--	//todo 정주원 group_id가 없을경우 choose otherwise에 전체 그룹 필요 ..		-->
+			<choose>
+				<when test="group_id != null and group_id > 0">
+					AND tjq.group_id = #{group_id}
+				</when>
+				<otherwise>
+					<if test="groupList != null and groupList.size != 0">
+						AND tjq.group_id IN
+						<foreach collection="groupList" item="Group" separator="," open="(" close=")">
+							#{Group.id}
+						</foreach>
+					</if>
+				</otherwise>
+			</choose>
+		  <if test="qualified_yn != null and !qualified_yn.equals('\u0000')">
+		   AND qualified_yn = #{qualified_yn}
+		  </if>
+		  <choose>
+			  <when test="search_txt != null and search_txt != ''">
+				  <choose>
+					  <when test="search_type != null and search_type != ''">
+						  AND td.${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+					  </when>
+					  <otherwise>
+						  AND (tjt.title LIKE CONCAT('%', #{search_txt}, '%')
+						   OR tjq.memo LIKE CONCAT('%', #{search_txt}, '%'))
+					  </otherwise>
+				  </choose>
+			  </when>
+		  </choose>
+		  <if test="status != null and !status.equals('\u0000')">
+			  AND tjq.status = #{status}
+		  </if>
+		  <if test="sys_reg_user_id != null and sys_reg_user_id != ''">
+			  AND tjq.sys_reg_user_id = #{sys_reg_user_id}
+		  </if>
+		</where>
+		 ORDER BY tjq.sys_reg_date DESC
+	</select>
+
+	<!-- 직무버전 조회 -->
+	<select id="findJobRevisionList"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRevision"
+			resultType="com.innon.education.qualified.current.repository.model.JobRevision">
+		SELECT tjr.id
+			 , tjr.purpose
+			 , tjr.reason
+			 , tjr.mandate
+			 , (SELECT discription FROM tb_code WHERE code_name = tjr.mandate AND delete_at != 'Y') AS mandate_nm
+			 , tjr.content
+			 , tjr.sys_reg_date
+			 , CONVERT(CHAR(10), tjr.sys_reg_date, 23) AS convert_reg_date
+			 , tjr.sys_reg_user_id
+			 , ei.user_nm AS sys_reg_user_nm
+		     , ed.dept_nm
+			 , ROW_NUMBER() OVER(ORDER BY (tjr.sys_reg_date) ASC) AS version
+			 , tjt.title AS job_title
+			 , tjq.qualified_yn
+			 , tjq.group_id
+			 , (select title from tb_group tg where tg.id = tjq.group_id) group_nm
+			 , tjr.qualified_id
+			 , tjq.job_type_id
+			 , tjr.use_flag
+			 , (SELECT TOP 1 CONVERT(CHAR(19), sys_upd_reg_date, 20) FROM tb_plan_sign_manager WHERE plan_sign_id = tps.id ORDER BY sys_upd_reg_date DESC) AS confirm_date
+			 , tjr.delete_at
+			 , IIF(tjq.qualified_yn = 'Y', '적합', '부적합') AS qualified_nm
+			 , tjq.memo
+			 , tjr.purpose_tx
+			 , tjr.main_duty_task
+			 , tjr.education
+			 , tjr.major
+			 , tjr.career
+			 , tjr.license
+			 , tjr.capability
+			 , tjr.pq
+			 , tjr.language_tx
+			 , tjr.healthy
+			 , tjr.training
+			 , tjr.superior
+			 , tjr.co_worker
+			 , tjr.junior
+			 , tjr.deputy
+			 , tjr.internal
+			 , tjr.external_tx
+			 , tjq.certi_month
+		  FROM tb_job_revision tjr
+		 INNER JOIN tb_job_qualified tjq
+			ON (tjr.qualified_id = tjq.id)
+		 INNER JOIN tb_job_type tjt
+		ON (tjq.job_type_id = tjt.id)
+        left join edu_insa ei
+        on (ei.user_id = tjr.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+		left join tb_plan_sign tps
+		on (tps.plan_id = tjr.id and tps.sign_category = 'comc11001' AND tps.signform = 'comi1s6')
+		<where>
+			AND tjr.delete_at != 'Y'
+			<if test="group_id != null and group_id > 0">
+				AND tjq.group_id = #{group_id}
+			</if>
+			<if test="id != null and id > 0">
+				AND tjr.id = #{id}
+			</if>
+			<if test="qualified_id != null and qualified_id > 0">
+				AND tjr.qualified_id = #{qualified_id}
+			</if>
+			<if test="job_type_id != null and job_type_id > 0">
+				AND tjq.job_type_id = #{job_type_id}
+			</if>
+			<if test="use_flag != null and use_flag > '' ">
+				AND tjr.use_flag = #{use_flag}
+			</if>
+		</where>
+		  ORDER BY tjr.sys_reg_date DESC
+	</select>
+
+	<!-- 직무버전 조회 -->
+	<select id="findJobRevision"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRevision"
+			resultType="com.innon.education.qualified.current.repository.model.JobRevision">
+		SELECT tjr.id
+		, tjr.purpose
+		, tjr.reason
+		, tjr.mandate
+		, (SELECT discription FROM tb_code WHERE code_name = tjr.mandate AND delete_at != 'Y') AS mandate_nm
+		<!--, tjr.content
+		, tjr.sys_reg_date
+		, CONVERT(CHAR(10), tjr.sys_reg_date, 23) AS convert_reg_date
+		, tjr.sys_reg_user_id
+		, (SELECT user_nm FROM edu_insa WHERE user_id = tjr.sys_reg_user_id) AS sys_reg_user_nm
+		, ROW_NUMBER() OVER(ORDER BY (tjr.sys_reg_date) ASC) AS version 
+		, tjt.title AS job_title
+		, tjq.qualified_yn
+		, tjq.group_id
+		, tjr.qualified_id
+		, tjq.job_type_id
+		, tjr.use_flag
+		, tjr.delete_at
+		, IIF(tjq.qualified_yn = 'Y', '적합', '부적합') AS qualified_nm
+		, (SELECT dept_nm FROM edu_dept WHERE dept_cd = tjd.dept_cd) AS dept_nm -->
+		, tjq.memo
+		FROM tb_job_revision tjr
+		INNER JOIN tb_job_qualified tjq
+		ON (tjr.qualified_id = tjq.id)
+		<!-- INNER JOIN tb_job_type tjt
+		ON (tjt.id = tjq.job_type_id) -->
+		<!--inner join tb_job_type_dept tjd
+		ON (tjd.job_type_id = tjt.id AND tjd.delete_at != 'Y') -->
+		<where>
+			<!-- AND tjr.delete_at != 'Y' -->
+			<!-- <if test="group_id != null and group_id > 0">
+				AND tjq.group_id = #{group_id}
+			</if> -->
+			<!-- <if test="qualified_id != null and qualified_id > 0">
+				AND tjr.qualified_id = #{qualified_id}
+			</if> 
+			<if test="use_flag != null and use_flag > '' ">
+				AND tjr.use_flag = #{use_flag}
+			</if>  -->
+			<if test="id != null ">
+				AND tjr.id = #{id}
+			</if>
+		</where>
+		ORDER BY tjr.sys_reg_date DESC
+	</select>
+
+	<!-- 버전별 교육내용 조회 -->
+	<select id="findRevisionContentList"
+			parameterType="int"
+			resultType="com.innon.education.qualified.current.repository.model.RevisionContent">
+		SELECT id
+			 , qualified_id
+			 , revision_id
+			 , group_id
+			 , content
+			 , content AS edu_contents
+			 , use_flag
+			 , delete_at
+			 , sys_reg_user_id
+			 , sys_reg_date
+		  FROM tb_revision_content
+		<where>
+		   AND delete_at != 'Y'
+		  <if test="revision_id != null and revision_id > 0">
+		   AND revision_id = #{revision_id}
+		  </if>
+		</where>
+	</select>
+
+	<select id="findRevisionDocumentList"
+			parameterType="int"
+			resultType="com.innon.education.qualified.current.repository.model.RevisionDocument">
+		SELECT trd.id
+			 , trd.revision_id
+			 , trd.document_id AS d_id
+			 , td.title
+			 , td.document_num
+			 , trd.group_id
+			 , trd.use_flag
+			 , trd.delete_at
+			 , trd.sys_reg_user_id
+			 , trd.sys_reg_date
+		  FROM tb_revision_document trd
+		 INNER JOIN tb_document td
+			ON (trd.document_id = td.id)
+		<where>
+		   AND trd.delete_at != 'Y'
+		  <if test="revision_id != null and revision_id > 0">
+		   AND trd.revision_id = #{revision_id}
+		  </if>
+		</where>
+	</select>
+
+	<!-- <select id="findJobSkillList"
+		parameterType="com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO"
+			resultType="com.innon.education.qualified.current.repository.dto.JobSkillDTO">
+		select jt.title job_title, jt.memo job_code, jq.qualified_yn,tep.group_id,
+		tep.job_revision_id, tep.job_qualified_id, tep.id plan_id, tep.title plan_title
+
+		from tb_education_plan_user tepu
+		left join tb_education_plan tep on tep.id = tepu.plan_id
+		left join tb_job_qualified jq on jq.id = tep.job_qualified_id
+		left join tb_job_type jt on jt.id = jq.job_type_id
+
+		where tepu.qms_user_id = #{qms_user_id}
+		<if test="group_id !=null and group_id >0">
+			and group_id = #{group_id}
+		</if>
+		and tep.use_flag = 'E'
+		and tep.delete_at != 'Y'
+	</select> -->
+
+	<select id="findJobSkillList"
+		parameterType="com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO"
+		resultType="com.innon.education.qualified.current.repository.dto.JobSkillDTO">
+
+		select jv.id jv_id, jt.title job_title, jt.memo job_code, jv.purpose, jv.reason, jq.qualified_yn,
+		jv.main_duty_task, jv.education, jv.major, jv.career, jv.deputy,
+		jv.mandate, (select discription from tb_code where code_name = jv.mandate) mandate_nm, jv.content job_content, tep.group_id,
+		tep.job_revision_id, tep.job_qualified_id, tep.id plan_id, tep.title plan_title,
+		CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date,
+		CONVERT(CHAR(10), DATEADD(MONTH, jq.certi_month, tep.plan_end_date), 23) AS skill_expired_date_str, jq.certi_month
+
+		from tb_education_plan_user tepu
+		left join tb_education_plan tep on tep.id = tepu.plan_id
+		left join tb_job_qualified jq on jq.id = tep.job_qualified_id
+		left join tb_job_revision jv on jv.id = tep.job_revision_id
+		left join tb_job_type jt on jt.id = jq.job_type_id
+		
+		where tepu.qms_user_id = #{qms_user_id}
+		and tepu.delete_at != 'Y'
+		<if test="group_id !=null and group_id >0">
+			and tep.group_id = #{group_id}
+		</if>
+		<!-- and tep.use_flag = 'E' -->
+		and tep.delete_at != 'Y'
+		<!-- and (jv.use_flag = 'S' or jv.use_flag = 'C') -->
+		ORDER BY  plan_end_date asc;
+	</select>
+
+	<select id="findJobSkillItemList"
+		parameterType="com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO"
+		resultType="com.innon.education.qualified.current.repository.dto.JobSkillDTO">
+		select jv.id jv_id, jt.title job_title, jt.memo job_code, jv.purpose, jv.reason, jq.qualified_yn,
+		jv.mandate, (select discription from tb_code where code_name = jv.mandate) mandate_nm, jv.content job_content, tep.group_id,
+		tep.job_revision_id, tep.job_qualified_id, tep.id plan_id, tep.title plan_title,
+		CONVERT(CHAR(10), tep.plan_end_date, 23) AS plan_end_date,
+		CONVERT(CHAR(10), DATEADD(MONTH, jq.certi_month, tep.plan_end_date), 23) AS skill_expired_date_str, jq.certi_month
+
+		from tb_education_plan_user tepu
+		left join tb_education_plan tep on tep.id = tepu.plan_id
+		left join tb_job_qualified jq on jq.id = tep.job_qualified_id
+		left join tb_job_revision jv on jv.id = tep.job_revision_id
+		left join tb_job_type jt on jt.id = jq.job_type_id
+		
+		where tepu.qms_user_id = #{qms_user_id}
+		and tepu.delete_at != 'Y'
+		<if test="group_id !=null and group_id >0">
+			and tep.group_id = #{group_id}
+		</if>
+		<!-- and tep.use_flag = 'E' -->
+		and tep.delete_at != 'Y'
+		<!-- and (jv.use_flag = 'S' or jv.use_flag = 'C') -->
+	</select>
+
+	<select id="userJobSkillList"
+			parameterType="com.innon.education.qualified.current.repository.model.JobSkill"
+			resultType="com.innon.education.qualified.current.repository.dto.JobSkillDTO"
+	>
+		select js.id, js.skill_user_id, js.use_flag, ed.dept_nm, ei.user_id, ei.user_nm, js.version,
+		js.delete_at, CONVERT(CHAR(10), js.sys_reg_date, 23) sys_reg_date_str, js.sys_reg_user_id,
+		ei.employee_num,  js.job_content, js.group_id
+		from tb_job_skill js
+		left join edu_insa ei on ei.user_id = js.skill_user_id
+		left join edu_dept ed on ed.dept_Cd = ei.dept_cd
+		where js.delete_at !='Y'
+		<if test="use_flag != null and use_flag !='' ">
+		   and js.use_flag = #{use_flag}
+		</if>
+		<if test="skill_user_id != null and skill_user_id !='' ">
+		   and js.skill_user_id = #{skill_user_id}
+		</if>
+	</select>
+
+	<select id="JobSkillUserItemList"
+			parameterType="com.innon.education.qualified.current.repository.model.JobSkill"
+			resultType="com.innon.education.qualified.current.repository.dto.JobSkillDTO"
+	>
+		select js.id, js.skill_user_id, js.use_flag, ed.dept_nm, ei.user_id, ei.user_nm, jsi.skill_memo, jt.title job_title, jt.memo job_code,
+			js.delete_at, CONVERT(CHAR(10), js.sys_reg_date, 23) sys_reg_date_str, CONVERT(CHAR(10), ep.plan_end_date, 23) plan_end_date_str, jsi.mandate_user_id,
+			CONVERT(CHAR(10), jsi.skill_expired_date, 23) skill_expired_date_str, m_ei.user_nm mandate_user_nm, CONVERT(CHAR(10), ep.plan_end_date, 23) plan_end_date ,ep.title plan_title, jr.mandate,
+			ei.employee_num, jsi.jv_id, jsi.plan_id, js.job_content , js.sys_reg_user_id, (SELECT discription FROM tb_code WHERE code_name = jr.mandate AND delete_at != 'Y') AS mandate_nm,
+			js.reports_to, js.deputy, js.education, js.major, js.career
+		from tb_job_skill js
+			left join tb_job_skill_item jsi on js.id = jsi.job_skill_id
+			left join edu_insa ei on ei.user_id = js.skill_user_id
+			left join tb_education_plan ep on ep.id = jsi.plan_id
+			left join tb_job_revision jr on jr.id = jsi.jv_id
+			left join tb_job_qualified jq on jq.id = ep.job_qualified_id
+			left join tb_job_type jt on jt.id = jq.job_type_id
+			left join edu_dept ed on ed.dept_Cd = ei.dept_cd
+			left join edu_insa m_ei on m_ei.user_id = jsi.mandate_user_id
+		where js.delete_at !='Y'
+			and jsi.delete_at !='Y'
+			<if test="job_skill_id !=null and job_skill_id > 0">
+				and jsi.job_skill_id = #{job_skill_id}
+			</if>
+		<if test="use_flag != null and use_flag !='' ">
+			and js.use_flag = #{use_flag}
+		</if>
+		<if test="skill_user_id != null and skill_user_id !='' ">
+			and js.skill_user_id = #{skill_user_id}
+		</if>
+
+	</select>
+
+	<select id="findJobQualifiedStatusById"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRequest"
+			resultType="com.innon.education.qualified.current.repository.dto.JobRequestDTO">
+		SELECT status AS qualified_status, id
+		FROM tb_job_qualified
+		WHERE id = #{id}
+	</select>
+
+	<delete id="deleteTempJobRequest"
+			parameterType="com.innon.education.qualified.current.repository.model.JobRequest">
+		DELETE tb_job_qualified
+		WHERE id = #{id}
+			AND status = 'T'
+	</delete>
+
+
+
+
+</mapper>

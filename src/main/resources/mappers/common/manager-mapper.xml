@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.manager-mapper">
+    <!-- 공지사항 등록 -->
+    <insert id="saveManager" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.manage.repository.Manager">
+        insert into tb_manager (
+        title, memo, sys_reg_user_id, dept_cd, delete_at, sys_reg_date
+        ) values (
+        #{title}, #{memo}, #{sys_reg_user_id}, #{dept_cd}, 'N', getDate()
+        )
+
+    </insert>
+    <insert id="saveManagerUser" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.manage.repository.ManagerUser">
+        insert into tb_manager_user (
+        dept_cd, manager_id, manager_user_id, sys_reg_user_id, sys_reg_date, delete_at
+        ) values (
+        #{dept_cd}, #{manager_id}, #{manager_user_id}, #{sys_reg_user_id}, getDate(), 'N'
+        )
+
+    </insert>
+
+    <select id="findManagerList"
+            parameterType="com.innon.education.admin.manage.repository.Manager"
+            resultType="com.innon.education.admin.manage.repository.ManagerDTO">
+        SELECT tm.id
+        , tm.title
+        , tm.memo
+        , tm.sys_reg_user_id
+        , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+        , tm.dept_cd
+        , tm.sys_reg_date
+        , CONVERT(CHAR(10), tm.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_manager_user WHERE tm.id = manager_id AND delete_at = 'N') AS manager_user_cnt
+        FROM tb_manager tm
+        LEFT JOIN edu_insa ei
+          ON (ei.user_id = tm.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+          ON (ed.dept_cd = ei.dept_cd)
+        WHERE tm.delete_at != 'Y'
+        <if test="title != null and title != ''">
+            AND title LIKE CONCAT('%', #{title}, '%')
+        </if>
+
+        <if test="memo != null and memo != ''">
+            AND memo LIKE CONCAT('%', #{memo}, '%')
+        </if>
+        <choose>
+            <when test="search_txt != null and search_txt != ''">
+                <choose>
+                    <when test="search_type != null and search_type != ''">
+                        AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                    </when>
+                    <otherwise>
+                        AND (title LIKE CONCAT('%', #{search_txt}, '%')
+                        OR memo LIKE CONCAT('%', #{search_txt}, '%')
+                        OR user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        order by tm.sys_reg_date desc
+    </select>
+
+    <!-- 결제권자 조회 -->
+    <select id="findManagerUserList"
+            resultType="com.innon.education.admin.manage.repository.ManagerUser"
+            parameterType="com.innon.education.admin.manage.repository.Manager">
+        SELECT tms.manager_id
+             , tms.id
+             , tm.title
+             , tms.manager_id
+             , tms.manager_user_id
+             , (SELECT user_nm FROM edu_insa ei WHERE user_id = tms.manager_user_id) AS user_nm
+             , (SELECT dept_nm FROM edu_dept ed WHERE dept_cd = tms.dept_cd) AS dept_nm
+             , tms.dept_cd
+          FROM tb_manager_user tms
+          LEFT JOIN  tb_manager tm
+            ON (tm.id = tms.manager_id AND tm.delete_at != 'Y')
+        <where>
+            <if test="id != null and id > 0">
+                AND tms.manager_id = #{id}
+            </if>
+            <if test="group_id != null and group_id > 0">
+                and tms.dept_cd in (select dept_cd from tb_group_dept where group_id = #{group_id} and delete_at != 'Y')
+            </if>
+            <if test="manager_user_id != null and manager_user_id != ''">
+                AND tms.manager_user_id = #{manager_user_id}
+            </if>
+            AND tms.delete_at != 'Y'
+        </where>
+         ORDER BY tm.title,tms.id
+    </select>
+    <!-- 결제권자 조회 -->
+    <select id="findAuthMenu"
+            resultType="java.util.Map"
+            parameterType="com.innon.education.admin.manage.repository.Manager">
+        with menu_cte as (
+            select role_id , up_role_id , 0 as level
+                 , convert(VARCHAR(500),'') as role_path
+                 , convert(VARCHAR(500),'M00') as up_role_path
+              from role_menu
+             WHERE [depth_level] = 0
+             UNION ALL
+            SELECT rm.role_id , rm.up_role_id, cte.level +1
+                 , convert(VARCHAR(500),rm.role_id ) as role_path
+                 , convert(VARCHAR(500),rm.up_role_id) as up_role_path
+              from role_menu rm with(NOLOCK)
+             Inner join menu_cte cte
+                on cte.role_id = rm.up_role_id
+             UNION ALL
+            SELECT rm.role_id , cte.up_role_id, cte.level +1
+                 , role_path as role_path
+                 , cte.up_role_id as up_role_path
+              from role_menu rm with(NOLOCK)
+             Inner join menu_cte cte
+                on cte.role_id = rm.up_role_id
+             where cte.level = 1
+        )
+        select role_path as role_menu_id
+             , up_role_path as up_role_id
+          from menu_cte
+         where role_id IN (
+            select rma.role_menu_id
+              from dbo.role_menu_action rma
+             inner join dbo.role_menu rm
+                on rma.role_menu_id = rm.role_id
+             inner join dbo.role_user ru
+                on (rma.role_id = ru.role_id AND ru.delete_at != 'Y')
+             where ru.user_id =#{manager_user_id}
+               and rma.delete_at != 'Y'
+         )
+    </select>
+    <select id="findManagerById"
+            parameterType="int"
+            resultType="com.innon.education.admin.manage.repository.ManagerDTO">
+        SELECT tm.id
+        , tm.title
+        , tm.memo
+        , tm.sys_reg_user_id
+        , (SELECT user_nm FROM edu_insa WHERE tm.sys_reg_user_id = user_id) sys_reg_user_nm
+        , tm.dept_cd
+        , tm.sys_reg_date
+        , CONVERT(CHAR(10), tm.sys_reg_date, 23) AS convert_reg_date
+        , (SELECT COUNT(id) FROM tb_manager_user WHERE tm.id = manager_id) AS manager_user_cnt
+        FROM tb_manager tm
+        <where>
+            AND tm.delete_at != 'Y'
+            <if test="id != null and id > 0">
+                AND id = #{id}
+            </if>
+        </where>
+        ORDER BY tm.sys_reg_date DESC
+    </select>
+
+
+    <update id="updateManager"
+            parameterType="com.innon.education.admin.manage.repository.Manager">
+        UPDATE tb_manager
+        SET title = #{title}
+        , memo = #{memo}
+        , sys_upd_user_id = #{sys_reg_user_id}
+        , sys_upd_reg_date = getDate()
+        <if test="delete_at !=null and delete_at !=''">,delete_at = #{delete_at}</if>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteManagerUser" parameterType="com.innon.education.admin.manage.repository.ManagerUser">
+		DELETE FROM tb_manager_user
+		WHERE manager_id = #{manager_id}
+    </delete>
+
+    <update id="updateManagerUser"  parameterType="com.innon.education.admin.manage.repository.ManagerUser">
+        UPDATE tb_manager_user
+           SET sys_upd_reg_date = getDate()
+             , sys_upd_user_id = #{sys_reg_user_id}
+             <if test="manager_user_id != null  and manager_user_id != ''">
+             ,manager_user_id =#{manager_user_id}
+             </if>
+             <if test="dept_cd != null  and dept_cd != ''">
+             ,dept_cd =#{dept_cd}
+             </if>
+             <if test="delete_at != null and delete_at != ''">
+             , delete_at = 'Y'
+             </if>
+         WHERE id = #{id}
+    </update>
+
+    <!-- 메뉴권한 목록 조회 -->
+    <select id="findRoleMenuList"
+            parameterType="com.innon.education.common.repository.dto.MenuDTO"
+            resultType="com.innon.education.common.repository.dto.MenuDTO">
+        SELECT rm.id
+             , rm.role_id AS role_menu_id
+             , (SELECT role_id FROM role_menu_action WHERE role_menu_id = rm.role_id AND role_id = #{role_id} AND delete_at != 'Y') AS role_id
+             , rm.role_menu
+             , rm.sys_req_user_id
+             , rm.sys_reg_date
+             , rm.sys_upd_user_id
+             , rm.up_role_id
+             , rm.depth_level
+          FROM role_menu rm
+    </select>
+
+    <!-- 메뉴권한 삭제 -->
+    <update id="deleteRoleMenuList"
+            parameterType="string">
+        UPDATE role_menu_action
+           SET delete_at = 'Y'
+         WHERE role_id = #{role_id}
+    </update>
+
+    <!-- 메뉴권한 등록 -->
+    <insert id="saveRoleMenu"
+            parameterType="com.innon.education.common.repository.dto.MenuDTO">
+        MERGE INTO role_menu_action
+        USING (SELECT 1 AS DUM) X
+           ON (role_id = #{role_id} AND role_menu_id = #{role_menu_id})
+         WHEN MATCHED THEN
+       UPDATE SET delete_at = 'N'
+         WHEN NOT MATCHED THEN
+       INSERT (
+           role_menu_id,
+           role_id,
+           sys_reg_user_id,
+           sys_reg_date,
+           delete_at
+       ) VALUES (
+           #{role_menu_id},
+           #{role_id},
+           #{sys_req_user_id},
+           getDate(),
+           'N'
+       );
+    </insert>
+</mapper>

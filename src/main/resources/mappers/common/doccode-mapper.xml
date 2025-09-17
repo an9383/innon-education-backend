@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.doccode-mapper">
+    <!-- 문서유형조회 -->
+    <select id="findDocCodeList"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode"
+            resultType="com.innon.education.admin.doccode.repository.DocCodeDTO">
+        SELECT tdc.id
+        , tdc.doc_code_name
+        , tdc.doc_code
+        , tdc.parent_code
+        , tdc.short_name
+        , tdc.group_id
+        , (SELECT title FROM tb_group WHERE id = tdc.group_id) AS group_nm
+        , CONVERT(VARCHAR(500), tdc.doc_code_name) AS NM_PATH
+        , CONVERT(VARCHAR(500), tdc.doc_code) AS CD_PATH
+        , CONVERT(VARCHAR(500), tdc.short_name) AS short_path
+        , tdc.depth_level
+        , tdc.order_num
+        , tdc.use_flag
+        , IIF(tdc.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+        , tdc.delete_at
+        , tdc.sys_reg_date
+        , CONVERT(CHAR(10), tdc.sys_reg_date, 23) AS convert_reg_date
+        , tdc.sys_reg_user_id
+        , ei.user_nm + ' [' + ed.dept_nm + ']' AS sys_reg_user_nm
+        FROM tb_doc_code tdc WITH(NOLOCK)
+        LEFT JOIN edu_insa ei
+        ON (ei.user_id = tdc.sys_reg_user_id)
+        LEFT JOIN edu_dept ed
+        ON (ed.dept_cd = ei.dept_cd)
+        <where>
+            AND tdc.delete_at != 'Y'
+            <choose>
+                <when test="group_id != null and group_id > 0">
+                    AND tdc.group_id = #{group_id}
+                </when>
+                <otherwise>
+                    <if test="groupList != null and groupList.size != 0">
+                        AND tdc.group_id IN
+                        <foreach collection="groupList" item="group" separator="," open="(" close=")">
+                            #{group.id}
+                        </foreach>
+                    </if>
+                </otherwise>
+            </choose>
+            <if test="doc_code != null and doc_code != ''">
+                AND tdc.doc_code = #{doc_code}
+            </if>
+            <if test="parent_code != null and parent_code != ''">
+                AND tdc.parent_code = #{parent_code}
+            </if>
+            <if test="use_flag != null and !use_flag.equals('\u0000')">
+                AND tdc.use_flag = #{use_flag}
+            </if>
+            <choose>
+                <when test="search_txt != null and search_txt != ''">
+                    <choose>
+                        <when test="search_type != null and search_type != ''">
+                            AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                        </when>
+                        <otherwise>
+                            AND (tdc.doc_code LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tdc.doc_code_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR tdc.short_name LIKE CONCAT('%', #{search_txt}, '%')
+                            OR ei.user_nm LIKE CONCAT('%', #{search_txt}, '%'))
+                        </otherwise>
+                    </choose>
+                </when>
+            </choose>
+        </where>
+        ORDER BY DEPTH_LEVEL
+    </select>
+
+    <select id="findDocCodeList_back"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode"
+            resultType="com.innon.education.admin.doccode.repository.DocCodeDTO">
+        WITH tb_doc_code_CTE AS (
+            SELECT id
+                 , doc_code_name
+                 , doc_code
+                 , parent_code
+                 , short_name
+                 , CONVERT(VARCHAR(500), doc_code_name) AS NM_PATH
+                 , CONVERT(VARCHAR(500), doc_code) AS CD_PATH
+                 , CONVERT(VARCHAR(500), short_name) AS short_path
+                 , depth_level
+                 , order_num
+                 , use_flag
+                 , delete_at
+                 , sys_reg_date
+                 , CONVERT(CHAR(10), sys_reg_date, 23) AS convert_reg_date
+              FROM tb_doc_code WITH(NOLOCK)
+            <where>
+                <choose>
+                    <when test="doc_code != null and doc_code != ''">
+                        AND doc_code = #{doc_code}
+                    </when>
+                    <when test="search_txt != null and search_txt != ''">
+                        <choose>
+                            <when test="search_type != null and search_type != ''">
+                                AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+                            </when>
+                            <otherwise>
+                                AND (doc_code LIKE CONCAT('%', #{search_txt}, '%')
+                                 OR doc_code_name LIKE CONCAT('%', #{search_txt}, '%'))
+                            </otherwise>
+                        </choose>
+                    </when>
+                    <otherwise>
+                        AND depth_level = 0
+                    </otherwise>
+                </choose>
+            </where>
+            UNION ALL
+           SELECT tdc.id
+                , tdc.doc_code_name
+                , tdc.doc_code
+                , tdc.parent_code
+                , tdc.short_name
+                , CONVERT(VARCHAR(500), tdcc.NM_PATH + '>' + tdc.doc_code_name) AS NM_PATH
+                , CONVERT(VARCHAR(500), tdcc.CD_PATH + '>' + tdc.doc_code) AS CD_PATH
+                , CONVERT(VARCHAR(500), tdcc.short_path + '-' + tdc.short_name) AS short_path
+                , tdc.depth_level
+                , tdc.order_num
+                , tdc.use_flag
+                , tdc.delete_at
+                , tdc.sys_reg_date
+                , CONVERT(CHAR(10), tdc.sys_reg_date, 23) AS convert_reg_date
+             FROM tb_doc_code tdc
+            INNER JOIN tb_doc_code_CTE tdcc
+               ON tdcc.doc_code = tdc.parent_code
+        )
+        SELECT REPLICATE('  ', depth_level) + doc_code_name AS VIEW_NM
+             , id
+             , doc_code_name
+             , doc_code
+             , parent_code
+             , short_name
+             , NM_PATH
+             , CD_PATH
+             , short_path
+             , depth_level
+             , order_num
+             , use_flag
+             , sys_reg_date
+             , convert_reg_date
+             , IIF(use_flag = 'Y', '사용', '비사용') AS use_yn_nm
+          FROM tb_doc_code_CTE WITH(NOLOCK)
+         WHERE delete_at = 'N'
+         ORDER BY CD_PATH
+    </select>
+
+    <!-- 문서유형등록 -->
+    <insert id="saveDocCode" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode">
+        INSERT INTO tb_doc_code (
+            doc_code_name,
+            doc_code,
+            order_num,
+            short_name,
+            parent_code,
+            use_flag,
+            delete_at,
+            depth_level,
+            sys_reg_date,
+            sys_reg_user_id,
+            group_id
+        ) VALUES (
+            #{doc_code_name},
+            #{doc_code},
+            #{order_num},
+            #{short_name},
+            #{parent_code},
+            #{use_flag},
+            'N',
+            #{depth_level},
+            getDate(),
+            #{sys_reg_user_id},
+            #{group_id}
+        )
+    </insert>
+
+    <!-- 문서유형 삭제처리 -->
+    <update id="deleteDocCode"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode">
+        UPDATE tb_doc_code
+           SET delete_at = 'Y'
+         WHERE id = #{id}
+    </update>
+
+    <!-- 문서유형 수정 -->
+    <update id="updateDocCode"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode">
+        UPDATE tb_doc_code
+           SET doc_code =  #{doc_code}
+             , parent_code = #{parent_code}
+             , group_id = #{group_id}
+        <if test="doc_code_name != null and doc_code_name != ''">
+             , doc_code_name = #{doc_code_name}
+        </if>
+        <if test="use_flag != null and !use_flag.equals('\u0000')">
+             , use_flag = #{use_flag}
+        </if>
+             , short_name = #{short_name}
+             , sys_upd_user_id = #{sys_upd_user_id}
+             , sys_upd_reg_date = getDate()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 문서유형 코드 기준 문서번호 생성 -->
+    <select id="findDocNumByDocCode"
+            parameterType="com.innon.education.admin.doccode.repository.DocCode"
+            resultType="String">
+        WITH tb_doc_code_CTE AS (
+            SELECT doc_code
+                 , parent_code
+                 , depth_level
+                 , short_name
+              FROM tb_doc_code WITH(NOLOCK)
+             WHERE doc_code = #{doc_code} and delete_at != 'Y' and group_id =#{group_id}
+             UNION ALL
+            SELECT tdc.doc_code
+                 , tdc.parent_code
+                 , tdc.depth_level
+                 , tdc.short_name
+              FROM tb_doc_code tdc
+             INNER JOIN tb_doc_code_CTE tdcc
+                ON (tdc.doc_code = tdcc.parent_code) and delete_at != 'Y' and group_id =#{group_id}
+             WHERE tdc.depth_level >= 1
+        )
+        SELECT STUFF((
+            SELECT '-' + short_name
+              FROM tb_doc_code_CTE WITH(NOLOCK)
+             ORDER BY doc_code
+               FOR XML PATH('')
+        ), 1, 1, '') AS doc_code
+    </select>
+
+
+    <!-- 코드이름 기반 위치정보 조회 -->
+    <select id="findDocCode"
+            parameterType="string"
+            resultType="com.innon.education.admin.doccode.repository.DocCodeDTO">
+        SELECT top 1 *
+        FROM tb_doc_code
+        WHERE 1=1
+        <if test="doc_code != null and doc_code != ''">
+            AND doc_code = #{doc_code}
+        </if>
+    </select>
+</mapper>

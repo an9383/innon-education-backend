@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.management.mapper.result-mapper">
+    <!-- 교육결과 등록 -->
+    <insert id="saveEducationResult"
+            parameterType="com.innon.education.management.result.repository.entity.ManagementResultEntity">
+        INSERT INTO tb_education_result (
+            reason,
+        <if test="re_edu_start_date != null and re_edu_start_date !='' ">
+            re_edu_start_date,
+        </if>
+        <if test="re_edu_end_date != null and re_edu_end_date !='' ">
+            re_edu_end_date,
+        </if>
+        re_edu_yn,
+        use_flag,
+            plan_id
+        ) VALUES (
+            #{reason},
+        <if test="re_edu_start_date != null and re_edu_start_date !='' ">
+            #{re_edu_start_date},
+        </if>
+        <if test="re_edu_end_date != null and re_edu_end_date !='' ">
+            #{re_edu_end_date},
+        </if>
+        #{re_edu_yn},
+        #{use_flag},
+            #{plan_id}
+        )
+    </insert>
+
+    <update id="updateEducationResult"
+            parameterType="com.innon.education.management.result.repository.entity.ManagementResultEntity">
+        UPDATE tb_education_result
+        <set>
+            <if test="reason != null and reason != ''">
+                reason = #{reason},
+            </if>
+            <if test="re_edu_start_date != null and re_edu_start_date != ''">
+                re_edu_start_date = #{re_edu_start_date},
+            </if>
+            <if test="re_edu_end_date != null and re_edu_end_date != ''">
+                re_edu_end_date = #{re_edu_end_date},
+            </if>
+            <if test="plan_id != null and plan_id >0">
+                plan_id = #{plan_id},
+            </if>
+            <if test="re_edu_yn != null and re_edu_yn != ''">
+                re_edu_yn = #{re_edu_yn},
+            </if>
+            <if test="use_flag != null and use_flag != ''">
+                use_flag = #{use_flag},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="findEducationResult"
+            parameterType="com.innon.education.management.result.repository.model.ManagementResult"
+            resultType="com.innon.education.management.result.repository.dto.ManagementResultDTO">
+        SELECT id
+
+        , reason
+        , plan_id
+        , CONVERT(CHAR(10), re_edu_start_date, 23) re_edu_start_date
+        , CONVERT(CHAR(10), re_edu_end_date, 23) re_edu_end_date
+        , re_edu_yn
+        , use_flag
+        FROM tb_education_result
+        <where>
+            <if test="plan_id != null and plan_id > 0">
+                AND plan_id = #{plan_id}
+            </if>
+        </where>
+    </select>
+
+    <insert id="saveReduceStudent"
+            parameterType="com.innon.education.management.result.repository.entity.ReEducationEntity">
+        INSERT INTO tb_re_education (
+        re_edu_yn,
+        re_user_id,
+        re_edu_cnt,
+        plan_id
+        ) VALUES (
+        #{re_edu_yn},
+        #{re_user_id},
+        #{re_edu_cnt},
+        #{plan_id}
+        )
+    </insert>
+
+    <select id="reduceStudentList"
+            resultType="com.innon.education.management.result.repository.dto.ReEducationDTO"
+            parameterType="int"
+    >
+        select re_edu_yn,
+                re_user_id,
+                plan_id
+        from tb_re_education
+        where plan_id = #{plan_id}
+    </select>
+
+    <!-- 피교육자 목록 조회 -->
+    <select id="findResultPlanUserList"
+            parameterType="int"
+            resultType="com.innon.education.management.result.repository.dto.ManagementResultDTO">
+        SELECT tepu.qms_user_id
+             , IIF(
+                tua.attend_date IS NULL,
+                IIF(ter.reason IS NULL, '', '-'),
+                CONVERT(VARCHAR, tua.attend_date, 121)
+             ) AS attend_date
+             , IIF(tua.attend_user_id IS NULL, '-', '참석') AS attend_current
+             , ISNULL(ter.reason, '') AS reason
+          FROM tb_education_plan_user tepu
+          LEFT JOIN tb_user_attendance tua
+            ON (tepu.qms_user_id = tua.attend_user_id)
+          LEFT JOIN tb_epu_reason ter
+            ON (tepu.plan_id = ter.plan_id AND tepu.qms_user_id = ter.qms_user_id)
+         WHERE  tepu.delete_at != 'Y'
+        <choose>
+            <when test="plan_id != null and plan_id > 0">
+           AND tepu.plan_id = #{plan_id}
+            </when>
+            <otherwise>
+           AND tepu.plan_id = (SELECT MIN(plan_id) FROM tb_education_plan_user)
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- QMS 교육 정보 조회 -->
+    <select id="findPlanQmsList"
+            parameterType="int"
+            resultType="com.innon.education.management.plan.repository.model.PlanQms">
+        SELECT id
+             , plan_id
+             , process_id
+             , process_no
+             , work_seq
+             , work_dtl_seq
+             , req_user_id
+             , title
+             , edu_contents
+             , plant_cd
+          FROM tb_plan_qms
+        <where>
+            <if test="plan_id != null and plan_id > 0">
+                AND plan_id = #{plan_id}
+            </if>
+        </where>
+    </select>
+
+    <!-- QMS 교육 정보 조회 -->
+    <select id="findPlanQms"
+            parameterType="int"
+            resultType="com.innon.education.management.plan.repository.model.PlanQms">
+        SELECT id
+        , plan_id
+        , process_id
+        , process_no
+        , work_seq
+        , work_dtl_seq
+        , req_user_id
+        , title
+        , edu_contents
+        , plant_cd
+        FROM tb_plan_qms
+        <where>
+            <if test="plan_id != null and plan_id > 0">
+                AND plan_id = #{plan_id}
+            </if>
+        </where>
+    </select>
+
+
+
+
+    <!-- IF_QMS_RES 등록 -->
+    <insert id="saveQmsRes" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.innon.education.management.plan.repository.model.PlanQms">
+        insert into if_qms_res (plant_cd, process_id, process_no, work_num, work_seq, work_dtl_seq, title, edu_contents, edu_user_id,
+        	req_user_id, plan_start_date,plan_end_date,plan_id)
+        select tpq.plant_cd,tpq.process_id, tpq.process_no, tep.work_num, tpq.work_seq  , tpq.work_dtl_seq, tep.title, tpq.edu_contents, tep.edu_user_id,
+        	tpq.req_user_id, tep.plan_start_date, tep.plan_end_date,  tpq.plan_id
+        from tb_plan_qms tpq
+        	left join tb_education_plan tep on tep.id = tpq.plan_id
+        where plan_id = #{plan_id}
+
+    </insert>
+</mapper>

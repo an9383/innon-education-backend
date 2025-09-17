@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.board-mapper">
+    <!-- 게시글 등록 -->
+    <insert id="saveBoard"
+            parameterType="com.innon.education.admin.board.repository.entity.BoardEntity">
+        INSERT INTO tb_board (
+            title,
+            content,
+        <if test="board_type != null and board_type != ''">
+            board_type,
+        </if>
+            use_yn,
+            reg_id,
+            reg_date,
+            update_date
+        ) VALUES (
+            #{title},
+            #{content},
+        <if test="board_type != null and board_type != ''">
+            #{board_type},
+        </if>
+            'Y',
+            #{reg_id},
+            getDate(),
+            getDate()
+        )
+    </insert>
+
+    <!-- 게시글 조회 -->
+    <select id="findBoardList"
+            parameterType="com.innon.education.admin.board.repository.entity.BoardSearchEntity"
+            resultType="hashMap">
+        SELECT id
+             , title
+             , content
+             , reg_id
+             , update_date
+          FROM tb_board
+         WHERE 1=1
+        <if test="title != null and title != ''">
+           AND title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="content != null and content != ''">
+           AND content LIKE CONCAT('%', #{content}, '%')
+        </if>
+        <if test="board_type != null and board_type != ''">
+           AND board_type = #{board_type}
+        </if>
+        <if test="reg_id != null and reg_id != 0">
+           AND reg_id = #{reg_id}
+        </if>
+    </select>
+
+    <!-- 게시글 수정 -->
+    <update id="updateBoard"
+            parameterType="com.innon.education.admin.board.repository.entity.BoardEntity">
+        UPDATE tb_board
+           SET content = #{content}
+             , title = #{title}
+        <if test="board_type != null and board_type != ''">
+             , board_type = #{board_type}
+        </if>
+             , reg_id = #{reg_id}
+             , update_date = getDate()
+         WHERE id = #{board_id}
+    </update>
+
+    <!-- 게시글 삭제(use_yn값 update) -->
+    <update id="deleteBoard"
+            parameterType="com.innon.education.admin.board.repository.entity.BoardEntity">
+        UPDATE tb_board
+           SET use_yn = 'N'
+             , delete_date = getDate()
+             , reg_id = #{reg_id}
+         WHERE id= #{board_id}
+    </update>
+</mapper>

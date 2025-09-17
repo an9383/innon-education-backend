@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper
+	namespace="com.innon.education.new_education.mapper.new_sign-mapper">
+
+
+	<select id="currentSignList"
+		parameterType="com.innon.education.new_education.dto.New_SearchDTO"
+		resultType="com.innon.education.new_education.dto.CurrentSignDTO">
+		SELECT c_current_sign.*, ei.user_nm AS sign_user_nm
+		FROM (
+			SELECT ps.id plan_sign_id, ps.plan_id, ps.sign_id,
+			CASE
+				WHEN m.title IS NOT NULL THEN m.title ELSE '작성자'
+			END AS manager_nm,
+			ps.title,
+			(select discription from TB_CODE c where c.code_name = ps.status) sign_status_nm,
+			(select discription from TB_CODE c where c.code_name = ps.sign_category) sign_category_nm,
+			(select discription from TB_CODE c where c.code_name = psm.sign_type) sign_step_nm,
+			(select discription from TB_CODE c where c.code_name = psm.state) sign_confirm_nm,
+			psm.id AS tpsm_id, ps.sign_category, psm.order_num,
+			<!-- 이수철 : 반려때문에 모든 코맨트 살렸는데 (요청으로 들어감) -->
+			psm.comment,
+			<!-- 
+			CASE
+				WHEN psm.state ='coms11005' or psm.state ='coms11001' THEN psm.comment
+				ELSE ''
+			END AS comment,
+			 -->
+			CASE
+				--승인/결재종료/반려
+				WHEN psm.state ='coms11005' or psm.state ='coms11001' or psm.state ='coms11006' THEN CONVERT(CHAR(19), psm.sys_upd_reg_date, 20)
+				ELSE ''
+			END AS convert_upd_date,
+			CASE
+				WHEN psm.user_id IS NOT NULL THEN psm.user_id
+				WHEN (
+						SELECT TOP 1 manager_user_id
+						FROM tb_manager_user mu
+						where mu.dept_cd = #{dept_cd}
+						AND mu.delete_at != 'Y' and mu.manager_id = psm.manager_id
+					) IS NOT NULL then (
+						SELECT TOP 1 manager_user_id
+						FROM tb_manager_user mu
+						where mu.dept_cd = #{dept_cd}
+						AND mu.delete_at != 'Y' and mu.manager_id = psm.manager_id
+					)
+				ELSE (
+					SELECT TOP 1 manager_user_id
+					FROM tb_manager_user mu
+					where
+					mu.dept_cd IN (
+						<choose>
+							<when test="group_id != null and group_id > 0">
+								select dept_cd from tb_group_dept
+								where group_id = #{group_id}
+								and delete_at != 'Y'
+							</when>
+							<otherwise>
+								<if test="groupList != null and groupList.size != 0">
+									select dept_cd from tb_group_dept
+									where group_id IN
+									<foreach collection="groupList" item="group" separator=","
+										open="(" close=")">
+										#{group.id}
+									</foreach>
+									and delete_at != 'Y'
+								</if>
+							</otherwise>
+						</choose>
+					)
+					AND mu.delete_at != 'Y' and mu.manager_id = psm.manager_id
+				)
+			END AS sign_user_id,
+			psm.sign_type
+		FROM tb_plan_sign ps
+		LEFT JOIN tb_plan_sign_manager psm on psm.plan_sign_id = ps.id
+		LEFT JOIN tb_manager m on m.id = psm.manager_id
+		<where>
+			<if test="sign_category != null and sign_category != '' ">
+				AND ps.sign_category = #{sign_category}
+			</if>
+			<if test="plan_id != null and plan_id >0 ">
+				AND ps.plan_id = #{plan_id}
+			</if>
+			<!-- 이수철 : 교육계획 하나의 레코드의 모든 결재 표시하기 -->
+			<if test="signform =='comi1s6' or signform =='comi1s7' "> <!-- 직무요구항목 / 직무기술항목 -->
+				AND ps.signform = #{signform}
+			</if>
+			<if test="plan_sign_id != null and plan_sign_id > 0">
+				AND psm.plan_sign_id = #{plan_sign_id}
+			</if>
+		</where>
+		) c_current_sign
+		left join edu_insa ei on ei.user_id = c_current_sign.sign_user_id
+		ORDER BY c_current_sign.plan_sign_id asc, c_current_sign.order_num asc;
+	</select>
+
+</mapper>

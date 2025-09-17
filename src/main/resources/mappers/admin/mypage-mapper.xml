@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.admin.mapper.mypage-mapper">
+	<update id="updateEduInsaInfo"
+			parameterType="com.innon.education.admin.mypage.repository.entity.MypageEntity">
+		UPDATE EDU_INSA
+		   SET GATE_CD = #{gate_cd}
+			 , REG_DATE = #{reg_date}
+			 , REG_USER_ID = #{reg_user_id}
+			 , USER_TYPE = #{user_type}
+			 , WORK_TYPE = #{work_type}
+			 , PASSWORD = #{password}
+			 , DUTY_NM = #{duty_nm}
+			 , FAX_NUM = #{fax_num}
+			 , LANG_CD = #{lang_cd}
+			 , COUNTRY_CD = #{country_cd}
+			 , GMT_CD = #{gmt_cd}
+			 , PROGRESS_CD = #{progress_cd}
+			 , PW_WRONG_CNT = #{pw_wrong_cnt}
+			 , PW_RESET_FLAG = #{pw_reset_flag}
+			 , PW_RESET_DATE = #{pw_reset_date}
+			 , LAST_LOGIN_DATE = #{last_login_date}
+			 , IP_ADDR = #{ip_addr}
+			 , SUPER_USER_FLAG = #{super_user_flag}
+			 , USER_DATE_FORMAT_CD = #{user_date_format_cd}
+			 , USER_NUMBER_FORMAT_CD = #{user_number_format_cd}
+			 , COMPULSION_PW_RESET_FLAG = #{compulsion_pw_reset_flag}
+			 , CHIEF_FLAG = #{chief_flag}
+		 WHERE USER_ID = #{user_id}
+	</update>
+
+	<!-- 문서 > 마이페이지 > 승인요청 목록 -->
+	<select id="findSignCurrentDocumentList"
+			parameterType="com.innon.education.admin.mypage.repository.model.Mypage"
+			resultType="com.innon.education.admin.mypage.repository.dto.SignCurrentDTO">
+		SELECT * FROM (
+			SELECT ps.id, ps.id plan_sign_id, ps.title, ps.signform
+				, psm.plan_id, psm.manager_id, psm.order_num
+				, IIF(psm.manager_id = 0, ps.sys_reg_user_id, mu.manager_user_id) AS manager_user_id
+				, IIF(psm.manager_id = 0, (SELECT user_nm FROM edu_insa WHERE user_id = ps.sys_reg_user_id), ei.user_nm) AS manager_user_nm
+				, (SELECT discription FROM tb_code where code_name = ps.signform) AS signform_nm
+				, d.doc_code
+				, dl.req_user_id
+				, ei2.user_nm AS req_user_nm
+				, CONVERT(CHAR(16), ps.sys_reg_date, 20) AS req_date
+				, psm.sign_id, psm.sign_type
+				, (SELECT discription FROM tb_code WHERE code_name = psm.sign_type AND delete_at != 'Y') AS sign_type_nm
+				, psm.sign_category
+				, (SELECT discription FROM tb_code WHERE code_name = psm.sign_category AND delete_at != 'Y') AS sign_category_nm
+				, psm.state
+				, (SELECT discription FROM tb_code WHERE code_name = psm.state AND delete_at != 'Y') AS state_nm
+				, null AS edu_title, null AS edu_state, null AS edu_state_nm
+				, d.title AS doc_title
+				, dl.status AS doc_state
+				, (SELECT discription FROM tb_code WHERE code_name = dl.status AND delete_at != 'Y') AS doc_state_nm
+				, (SELECT TOP 1 manager_id FROM tb_plan_sign_manager WHERE plan_sign_id = ps.id ORDER BY id DESC) last_manager_id
+			FROM tb_plan_sign ps
+				LEFT JOIN tb_plan_sign_manager psm ON (psm.plan_sign_id = ps.id)
+				<if test="groupList != null and groupList.size != 0">
+					AND psm.group_id IN
+					<foreach collection="groupList" item="group" separator="," open="(" close=")">
+						#{group.id}
+					</foreach>
+				</if>
+				LEFT JOIN tb_manager_user mu ON (mu.manager_id = psm.manager_id AND mu.delete_at != 'Y')
+				LEFT JOIN tb_document d ON (d.id = psm.plan_id)
+				LEFT JOIN tb_document_loan dl ON (dl.d_id = psm.plan_id) and dl.delete_at !='Y'
+				LEFT JOIN edu_insa ei ON (mu.manager_user_id = ei.user_id)
+				LEFT JOIN edu_insa ei2 ON (dl.req_user_id = ei2.user_id)
+			<where>
+				AND psm.state = 'coms11004' --요청
+				AND psm.sign_category = 'comc11002' --문서 
+				<if test="req_date_start != null and req_date_start != ''">
+					AND CONVERT(CHAR(10), ps.sys_reg_date, 23) >= #{req_date_start}
+				</if>
+				<if test="req_date_end != null and req_date_end != ''">
+					AND CONVERT(CHAR(10), ps.sys_reg_date, 23) <![CDATA[<=]]> #{req_date_end}
+				</if>
+				<choose>
+					<when test="search_txt != null and search_txt != ''">
+						<choose>
+							<when test="search_type != null and search_type != ''">
+								<choose>
+									<when test="search_type.equals('req_user_nm')">
+										AND ei2.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<when test="search_type.equals('doc_title')">
+										AND d.title LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<when test="search_type.equals('doc_code')">
+										AND d.doc_code LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<otherwise>
+										AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+									</otherwise>
+								</choose>
+							</when>
+							<otherwise>
+								AND (
+									   ei2.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+									OR d.doc_code LIKE CONCAT('%', #{search_txt}, '%')
+									OR d.title LIKE CONCAT('%', #{search_txt}, '%')
+								)
+							</otherwise>
+						</choose>
+					</when>
+				</choose>
+			</where>
+		) AS t
+		<where>
+			<if test="user_id != null and user_id != ''">
+				AND t.manager_user_id = #{user_id}
+			</if>
+			<if test="req_user_id != null and req_user_id != ''">
+				AND t.req_user_id = #{req_user_id}
+			</if>
+			<if test="manager_user_id != null and manager_user_id != ''">
+				AND t.manager_user_id = #{manager_user_id}
+			</if>
+		</where>
+		ORDER BY t.plan_sign_id DESC
+	</select>
+
+	<!-- 교육 > 마이페이지 > 승인요청 목록 -->
+	<select id="findSignCurrentEducationList"
+			parameterType="com.innon.education.admin.mypage.repository.model.Mypage"
+			resultType="com.innon.education.admin.mypage.repository.dto.SignCurrentDTO">
+		SELECT * FROM (
+			SELECT t1.*
+				, IIF(t1.manager_id = 0, t1.sys_reg_user_id, mu.manager_user_id) AS manager_user_id --작성자 인경우만 manager_id = 0 임
+				, IIF(t1.manager_id = 0, ei2.user_nm, ei.user_nm) AS manager_user_nm
+				, (SELECT discription FROM tb_code where code_name = signform) AS signform_nm
+				, CONVERT(CHAR(16), t1.sys_reg_date, 20) AS req_date
+				, (SELECT discription FROM tb_code WHERE code_name = sign_type AND delete_at != 'Y') AS sign_type_nm
+				, (SELECT discription FROM tb_code WHERE code_name = sign_category AND delete_at != 'Y') AS sign_category_nm
+				, (SELECT discription FROM tb_code WHERE code_name = state AND delete_at != 'Y') AS state_nm
+				, (SELECT TOP 1 manager_id FROM tb_plan_sign_manager WHERE plan_sign_id = t1.plan_sign_id ORDER BY id DESC) last_manager_id
+				, null doc_title, null doc_state, null doc_state_nm, null doc_code
+				, t1.sys_reg_user_id AS req_user_id, ei2.user_nm AS req_user_nm
+			FROM (
+				SELECT psm.plan_id, psm.manager_id, psm.order_num, psm.sign_id, psm.sign_type, psm.sign_category, psm.state, psm.plan_sign_id, psm.group_id
+					, ps.id, ps.title, ps.signform, ps.sys_reg_user_id, ps.sys_reg_date
+					, ep.title AS edu_title, ep.state AS edu_state
+					, (SELECT discription FROM tb_code WHERE code_name = ep.state AND delete_at != 'Y') AS edu_state_nm
+				FROM tb_plan_sign_manager psm
+					LEFT JOIN tb_plan_sign ps ON psm.plan_sign_id = ps.id
+					LEFT JOIN tb_education_plan ep ON psm.plan_id = ep.id
+				WHERE psm.sign_category = 'comc11001' --교육
+					AND psm.state = 'coms11004' --요청
+					AND ps.signform IN ('comi1s3','comi1s4','comi1s5') -- 교육계획/교육진행/교육보고
+				UNION ALL
+				SELECT psm.plan_id, psm.manager_id, psm.order_num, psm.sign_id, psm.sign_type, psm.sign_category, psm.state, psm.plan_sign_id, psm.group_id
+					, ps.id, ps.title, ps.signform, ps.sys_reg_user_id, ps.sys_reg_date
+					, CONCAT('직무요구서 ', jq.id ,' [', jt.title, ']') AS edu_title
+					, jq.status AS edu_state
+					, (SELECT discription FROM tb_code WHERE code_name = jq.status AND delete_at != 'Y') AS edu_state_nm
+				FROM tb_plan_sign_manager psm
+					LEFT JOIN tb_plan_sign ps ON psm.plan_sign_id = ps.id
+					LEFT JOIN tb_job_qualified jq ON psm.plan_id = jq.id
+					LEFT JOIN tb_job_type jt ON jq.memo = jt.memo
+				WHERE psm.sign_category = 'comc11001' --교육
+					AND psm.state = 'coms11004' --요청
+					AND ps.signform IN ('comi1s6') -- 직무요구항목
+				UNION ALL
+				SELECT psm.plan_id, psm.manager_id, psm.order_num, psm.sign_id, psm.sign_type, psm.sign_category, psm.state, psm.plan_sign_id, psm.group_id
+					, ps.id, ps.title, ps.signform, ps.sys_reg_user_id, ps.sys_reg_date
+					, CONCAT('직무기술서 ', js.id, ' [버전 ', js.version,'][교육 ', (SELECT COUNT(*) FROM tb_job_revision WHERE qualified_id=js.id), '건]') AS edu_title
+					, null AS edu_state, null AS edu_state_nm
+				FROM tb_plan_sign_manager psm
+					LEFT JOIN tb_plan_sign ps ON psm.plan_sign_id = ps.id
+					LEFT JOIN tb_job_skill js ON psm.plan_id = js.id
+				WHERE psm.sign_category = 'comc11001' --교육
+					AND psm.state = 'coms11004' --요청
+					AND ps.signform IN ('comi1s7') -- 직무기술항목
+				UNION ALL
+				SELECT psm.plan_id, psm.manager_id, psm.order_num, psm.sign_id, psm.sign_type, psm.sign_category, psm.state, psm.plan_sign_id, psm.group_id
+				, ps.id, ps.title, ps.signform, ps.sys_reg_user_id, ps.sys_reg_date
+				, CONCAT('연간교육 계획', ' [버전 ', ae.version,']') AS edu_title
+				, null AS edu_state, null AS edu_state_nm
+				FROM tb_plan_sign_manager psm
+				LEFT JOIN tb_plan_sign ps ON psm.plan_sign_id = ps.id
+				LEFT JOIN tb_annual_education ae ON psm.plan_id = ae.id
+				WHERE psm.sign_category = 'comc11001' --교육
+				AND psm.state = 'coms11004' --요청
+				AND ps.signform IN ('comi1s1') -- 연간계획
+			) t1
+				LEFT JOIN tb_manager_user mu ON (mu.manager_id = t1.manager_id AND mu.delete_at != 'Y')
+				LEFT JOIN edu_insa ei  ON (mu.manager_user_id = ei.user_id)
+				LEFT JOIN edu_insa ei2 ON (t1.sys_reg_user_id = ei2.user_id)
+		) t
+		<where>
+			<if test="user_id != null and user_id != ''">
+				AND t.manager_user_id = #{user_id}
+			</if>
+			<if test="manager_user_id != null and manager_user_id != ''">
+				AND t.manager_user_id = #{manager_user_id}
+			</if>
+			<if test="req_user_id != null and req_user_id != ''"> <!-- 이수철 : 프론트에서 안보임 -->
+				AND t.req_user_id = #{req_user_id}
+			</if>
+			<if test="groupList != null and groupList.size != 0">
+				AND t.group_id IN
+				<foreach collection="groupList" item="group" separator="," open="(" close=")">
+					#{group.id}
+				</foreach>
+			</if>
+			<if test="req_date_start != null and req_date_start != ''">
+				AND CONVERT(CHAR(10), t.sys_reg_date, 23) >= #{req_date_start}
+			</if>
+			<if test="req_date_end != null and req_date_end != ''">
+				AND CONVERT(CHAR(10), t.sys_reg_date, 23) <![CDATA[<=]]> #{req_date_end}
+			</if>
+			<choose>
+				<when test="search_txt != null and search_txt != ''">
+					<choose>
+						<when test="search_type != null and search_type != ''"> <!-- 해당내용이 화면에서 안보인다 : 이수철 -->
+							<choose>
+								<when test="search_type.equals('req_user_nm')">
+									AND t.req_user_nm LIKE CONCAT('%', #{search_txt}, '%')
+								</when>
+								<otherwise>
+									AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+								</otherwise>
+							</choose>
+						</when>
+					</choose>
+				</when>
+			</choose>
+		</where>
+		ORDER BY t.plan_sign_id DESC;
+	</select>
+	
+	<!-- 문서 > 마이페이지 > 신청이력 -->
+	<select id="findMyRequestSignInfo"
+			parameterType="com.innon.education.admin.mypage.repository.model.Mypage"
+			resultType="com.innon.education.admin.mypage.repository.dto.SignCurrentDTO">
+		SELECT distinct(id)
+			, sign_category
+			, sign_category_nm
+			, signform
+			, signform_nm
+			, doc_code
+			, doc_title
+			, title
+			, req_user_nm
+			, req_date
+			, sign_type
+			, sign_type_nm
+			, req_user_id
+		FROM (
+			SELECT tps.id
+				, tpsu.sign_category
+				, (SELECT discription FROM tb_code WHERE code_name = tpsu.sign_category AND delete_at != 'Y') AS sign_category_nm
+				, tps.signform
+				, (SELECT discription FROM tb_code where code_name = tps.signform) AS signform_nm
+				, td.doc_code
+				, td.title AS doc_title
+				, CONVERT(VARCHAR(3000), tps.title) AS title
+				, ei2.user_nm AS req_user_nm
+				, CONVERT(CHAR(10), tps.sys_reg_date, 23) AS req_date
+				, tpsu.sign_type
+				, (SELECT discription FROM tb_code WHERE code_name = tpsu.sign_type AND delete_at != 'Y') AS sign_type_nm
+				, tdl.req_user_id
+			FROM tb_plan_sign tps
+				LEFT JOIN tb_plan_sign_manager tpsu ON (tpsu.plan_sign_id = tps.id)
+				<if test="groupList != null and groupList.size != 0">
+					AND tpsu.group_id IN
+					<foreach collection="groupList" item="group" separator="," open="(" close=")">
+						#{group.id}
+					</foreach>
+				</if>
+				LEFT JOIN tb_manager_user tmu ON (tmu.manager_id = tpsu.manager_id AND tmu.delete_at != 'Y')
+				LEFT JOIN edu_insa ei ON (tmu.manager_user_id = ei.user_id)
+				<if test="sign_category != null and sign_category != ''">
+		
+				</if><!--TODO 연간시 조인 테이블 변경 ...  -->
+				LEFT JOIN tb_education_plan tep ON (tep.id = tpsu.plan_id)
+				LEFT JOIN tb_document_loan tdl ON (tdl.d_id = tpsu.plan_id) and tdl.delete_at !='Y'
+				LEFT JOIN edu_insa ei2 ON (tdl.req_user_id = ei2.user_id)
+				LEFT JOIN tb_document td ON (td.id = tpsu.plan_id)
+			<where>
+				AND tpsu.state = 'coms11004' --요청
+				<if test="sign_category != null and sign_category != ''">
+					AND tpsu.sign_category = #{sign_category}
+				</if>
+				<if test="req_date_start != null and req_date_start != ''">
+					AND CONVERT(CHAR(10), tps.sys_reg_date, 23) >= #{req_date_start}
+				</if>
+				<if test="req_date_end != null and req_date_end != ''">
+					AND CONVERT(CHAR(10), tps.sys_reg_date, 23) <![CDATA[<=]]> #{req_date_end}
+				</if>
+				<choose>
+					<when test="search_txt != null and search_txt != ''">
+						<choose>
+							<when test="search_type != null and search_type != ''">
+								<choose>
+									<when test="search_type.equals('req_user_nm')">
+										AND ei2.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<when test="search_type.equals('doc_title')">
+										AND td.title LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<when test="search_type.equals('doc_code')">
+										AND td.doc_code LIKE CONCAT('%', #{search_txt}, '%')
+									</when>
+									<otherwise>
+										AND ${search_type} LIKE CONCAT('%', #{search_txt}, '%')
+									</otherwise>
+								</choose>
+							</when>
+							<otherwise>
+								<choose>
+									<when test="sign_category.equals('comc11002')">
+										AND (ei2.user_nm LIKE CONCAT('%', #{search_txt}, '%')
+										OR td.doc_code LIKE CONCAT('%', #{search_txt}, '%')
+										OR td.title LIKE CONCAT('%', #{search_txt}, '%'))
+									</when>
+								</choose>
+							</otherwise>
+						</choose>
+					</when>
+					<otherwise>
+	
+					</otherwise>
+				</choose>
+			</where>
+		) AS t
+		<where>
+			<if test="user_id != null and user_id != ''">
+				AND t.manager_user_id = #{user_id}
+			</if>
+			<if test="req_user_id != null and req_user_id != ''">
+				AND t.req_user_id = #{req_user_id}
+			</if>
+			<if test="manager_user_id != null and manager_user_id != ''">
+				AND t.manager_user_id = #{manager_user_id}
+			</if>
+		</where>
+		ORDER BY t.id DESC
+	</select>
+
+	<select id="findSignCurrent_back"
+			parameterType="com.innon.education.admin.mypage.repository.model.Mypage"
+			resultType="com.innon.education.admin.mypage.repository.dto.SignCurrentDTO">
+		SELECT tpsu.id
+			 , tpsu.plan_id
+			 , (SELECT state FROM tb_education_plan WHERE id = tpsu.plan_id) AS edu_state
+			 , (SELECT discription FROM tb_code WHERE code_name = (
+					SELECT state FROM tb_education_plan WHERE id = tpsu.plan_id)
+					AND delete_at != 'Y'
+			   ) AS edu_state_nm
+			 , (SELECT status from tb_document_loan WHERE d_id = tpsu.plan_id and delete_at !='Y') AS doc_state
+			 , (SELECT discription FROM tb_code WHERE code_name = (
+					SELECT status from tb_document_loan WHERE d_id = tpsu.plan_id and delete_at !='Y')
+					AND delete_at != 'Y'
+			   ) AS doc_state_nm
+			 , tpsu.user_id
+			 , (SELECT title FROM tb_education_plan WHERE id = tpsu.plan_id) AS plan_title
+			 , (SELECT title FROM tb_document WHERE id = tpsu.plan_id) AS document_title
+			 , tpsu.sign_type
+			 , (SELECT discription FROM tb_code WHERE code_name = tpsu.sign_type AND delete_at != 'Y') AS sign_type_nm
+			 , tpsu.sign_id
+			 , tpsu.order_num
+			 , tpsu.sign_category
+			 , (SELECT discription FROM tb_code WHERE code_name = tpsu.sign_category AND delete_at != 'Y') AS sign_category_nm
+			 , tpsu.state
+			 , CASE WHEN tpsu.state = 'REQUEST' THEN '승인대기'
+					WHEN tpsu.state = 'APPROVED' THEN '승인완료'
+					WHEN tpsu.state = 'REJECT' THEN '반려'
+				END AS state_nm
+		  FROM tb_plan_sign_manager tpsu
+		 WHERE 1=1
+	  <if test="user_id != null and user_id != ''">
+		  AND tpsu.user_id = #{user_id}
+	  </if>
+	  <if test="sign_category != null and sign_category != ''">
+		 AND tpsu.sign_category = #{sign_category}
+	  </if>
+	</select>
+</mapper>

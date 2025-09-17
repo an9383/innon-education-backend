@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innon.education.management.mapper.eval-mapper">
+    <!-- 수강생 답변 등록 -->
+    <insert id="savePuqAnswer"
+            parameterType="com.innon.education.management.evaluation.repository.entity.ManagementEvalEntity">
+        MERGE INTO tb_pu_q_answer
+        USING (SELECT 1 AS DUM) X
+           ON (epu_id = #{epu_id} AND question_info_id = #{question_info_id})
+         WHEN MATCHED THEN
+       UPDATE SET status = #{status},
+                  user_answer = #{user_answer},
+                  grade_yn = #{grade_yn},
+                  answer_cnt = #{answer_cnt}
+         WHEN NOT MATCHED THEN
+       INSERT (
+            epu_id
+          , question_info_id
+          , user_answer
+          , grade_yn
+          , status
+        <if test="answer_cnt != null">
+          , answer_cnt
+        </if>
+       ) VALUES (
+            #{epu_id}
+          , #{question_info_id}
+          , #{user_answer}
+          , #{grade_yn}
+          , #{status}
+        <if test="answer_cnt != null">
+          , #{answer_cnt}
+        </if>
+       );
+    </insert>
+
+    <!-- 수강생 답변 정답 처리 -->
+    <update id="updatePuqAnswer"
+            parameterType="com.innon.education.management.evaluation.repository.entity.ManagementEvalEntity">
+        UPDATE tb_pu_q_answer
+           SET grade_yn = #{grade_yn}
+         WHERE epu_id = #{epu_id}
+           AND qb_q_id = #{qb_q_id}
+    </update>
+
+    <!-- 피교육자, 교육계획아이디 기준 문제 조회 -->
+    <select id="findQuestionInfo"
+            parameterType="com.innon.education.management.evaluation.repository.model.ManagementEval"
+            resultType="com.innon.education.management.evaluation.repository.dto.QuestionInfoDTO">
+        select tqq.id
+            , tqi.qb_q_id
+            , tq.edu_type
+            , tqi.plan_id
+            , tqi.id AS question_info_id
+            , (SELECT discription FROM tb_code WHERE code_name = tq.edu_type AND delete_at != 'Y') AS edu_type_nm
+            , tq.group_id
+            , (SELECT title FROM tb_group WHERE id = tq.group_id) AS group_nm
+            , tqq.qb_id
+            , tqq.title
+            , tqq.essential
+            , tqq.question_type
+            , (SELECT discription FROM tb_code WHERE code_name = tqq.question_type AND delete_at != 'Y') AS question_type_nm
+            , grade
+            , (SELECT discription FROM tb_code WHERE code_name = tqq.grade AND delete_at != 'Y') AS grade_nm
+            , tqq.explanation
+            , tqq.use_flag
+            , IIF(tqq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+            , tqq.delete_at
+            , tqq.sys_reg_user_id
+            , (SELECT user_nm FROM edu_insa WHERE user_id = tqq.sys_reg_user_id) AS sys_reg_user_nm
+            , tqq.sys_reg_date
+            , CONVERT(CHAR(10), tqq.sys_reg_date, 23) AS convert_reg_date
+        from tb_question_info tqi
+                 left join tb_pu_q_answer tpqa
+                           on (tpqa.question_info_id = tqi.id and tpqa.epu_id = #{qms_user_id}
+                           and answer_cnt = (SELECT MAX(answer_cnt) FROM tb_pu_q_answer WHERE question_info_id = tqi.id and epu_id =  #{qms_user_id})
+                           )
+                 left join tb_qb_question tqq
+                           on (tqi.qb_q_id = tqq.id)
+               left join tb_qb tq on tq.id = tqq.qb_id
+        <where>
+            and tqi.delete_at != 'Y'
+          and tqi.plan_id = #{plan_id}
+        </where>
+    </select>
+
+    <!-- 문제 아이디 기준 문항 조회 -->
+    <select id="findQuestionItem"
+            parameterType="int"
+            resultType="com.innon.education.management.evaluation.repository.dto.QuestionItemDTO">
+        SELECT id
+             , item_name
+             , correct_answer
+          FROM tb_qb_q_item
+        WHERE delete_at != 'Y'
+        AND use_flag ='Y'
+        <if test="qb_q_id != null and qb_q_id != ''">
+            AND qb_q_id = #{qb_q_id}
+        </if>
+    </select>
+
+    <!-- 오답정보 조회 -->
+    <select id="findWrongAnswerList"
+            parameterType="com.innon.education.management.evaluation.repository.model.ManagementEval"
+            resultType="com.innon.education.management.evaluation.repository.dto.ManagementEvalDTO">
+        select tepu.id
+             , tqq.question_type
+             , tqq.title AS question_title
+             , (SELECT item_name FROM tb_qb_q_item WHERE id = tpqa.user_answer) AS user_answer
+             , tpqa.grade_yn
+             , IIF(tpqa.grade_yn = 'Y', '정답', '오답') AS grade_str
+             , tqq.explanation
+             , tqqi.item_name AS correct_answer
+             , tpqa.answer_cnt
+             , tqq.explanation
+         from tb_education_plan_user tepu
+         left join tb_question_info tqi
+           on (tqi.plan_id = tepu.plan_id and tqi.delete_at != 'Y')
+        inner join tb_pu_q_answer tpqa
+           on (
+               tpqa.question_info_id = tqi.id
+           and tpqa.epu_id = #{qms_user_id}
+           and answer_cnt = (
+                SELECT MAX(answer_cnt)
+                  FROM tb_pu_q_answer
+                 WHERE question_info_id = tqi.id and epu_id =#{qms_user_id}
+           )
+         )
+         left join tb_qb_question tqq
+           on (tqi.qb_q_id = tqq.id)
+         left join tb_qb_q_item tqqi
+           on (tqqi.qb_q_id = tqq.id and tqqi.correct_answer ='Y' and tqqi.delete_at != 'Y')
+        <where>
+            and tepu.delete_at != 'Y'
+            and tepu.qms_user_id = #{qms_user_id}
+            and tepu.plan_id = #{plan_id}
+        </where>
+    </select>
+
+    <!-- 피교육자, 교육계획아이디 기준 저장된 문제 조회 -->
+    <select id="findTempQuestionList"
+            parameterType="com.innon.education.management.evaluation.repository.model.ManagementEval"
+            resultType="com.innon.education.management.evaluation.repository.dto.QuestionInfoDTO">
+        select tqq.id
+             , tqi.qb_q_id
+             , tq.edu_type
+             , tqi.plan_id
+             , tqi.id AS question_info_id
+             , (SELECT discription FROM tb_code WHERE code_name = tq.edu_type AND delete_at != 'Y') AS edu_type_nm
+             , tq.group_id
+             , (SELECT title FROM tb_group WHERE id = tq.group_id) AS group_nm
+             , tqq.qb_id
+             , tqq.title
+             , tqq.essential
+             , tqq.question_type
+             , (SELECT discription FROM tb_code WHERE code_name = tqq.question_type AND delete_at != 'Y') AS question_type_nm
+             , grade
+             , (SELECT discription FROM tb_code WHERE code_name = tqq.grade AND delete_at != 'Y') AS grade_nm
+             , tqq.explanation
+             , tqq.use_flag
+             , IIF(tqq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+             , tqq.delete_at
+             , tqq.sys_reg_user_id
+             , (SELECT user_nm FROM edu_insa WHERE user_id = tqq.sys_reg_user_id) AS sys_reg_user_nm
+             , tqq.sys_reg_date
+             , CONVERT(CHAR(10), tqq.sys_reg_date, 23) AS convert_reg_date
+             , tpqa.answer_cnt
+          from tb_pu_q_answer tpqa
+         inner join tb_question_info tqi
+            on (tpqa.question_info_id = tqi.id)
+          left join tb_qb_question tqq
+            on (tqi.qb_q_id = tqq.id)
+          left join tb_qb tq
+            on tq.id = tqq.qb_id
+         where tpqa.epu_id = #{qms_user_id}
+           and plan_id = #{plan_id}
+    </select>
+
+    <select id="findUserPassYn"
+            parameterType="com.innon.education.management.evaluation.repository.model.ManagementEval"
+            resultType="String">
+        SELECT pass_yn
+          FROM tb_education_plan_user
+         WHERE plan_id = #{plan_id}
+           AND qms_user_id = #{qms_user_id}
+           AND delete_at != 'Y'
+    </select>
+
+    <!-- 교육계획아이디 기준 문제 조회 -->
+    <select id="findEduQuestionInfo"
+            parameterType="com.innon.education.management.evaluation.repository.model.ManagementEval"
+            resultType="com.innon.education.management.evaluation.repository.dto.QuestionInfoDTO">
+        select tqq.id
+        , tqi.qb_q_id
+        , tq.edu_type
+        , tqi.plan_id
+        , tqi.id AS question_info_id
+        , (SELECT discription FROM tb_code WHERE code_name = tq.edu_type AND delete_at != 'Y') AS edu_type_nm
+        , tq.group_id
+        , (SELECT title FROM tb_group WHERE id = tq.group_id) AS group_nm
+        , tqq.qb_id
+        , tqq.title
+        , tqq.essential
+        , tqq.question_type
+        , (SELECT discription FROM tb_code WHERE code_name = tqq.question_type AND delete_at != 'Y') AS question_type_nm
+        , grade
+        , (SELECT discription FROM tb_code WHERE code_name = tqq.grade AND delete_at != 'Y') AS grade_nm
+        , tqq.explanation
+        , tqq.use_flag
+        , IIF(tqq.use_flag = 'Y', '사용', '미사용') AS use_flag_nm
+        , tqq.delete_at
+        , tqq.sys_reg_user_id
+        , (SELECT user_nm FROM edu_insa WHERE user_id = tqq.sys_reg_user_id) AS sys_reg_user_nm
+        , tqq.sys_reg_date
+        , CONVERT(CHAR(10), tqq.sys_reg_date, 23) AS convert_reg_date
+        from tb_question_info tqi
+        left join tb_qb_question tqq
+        on (tqi.qb_q_id = tqq.id)
+        left join tb_qb tq on tq.id = tqq.qb_id
+        <where>
+            and tqi.delete_at != 'Y'
+            and tqi.plan_id = #{plan_id}
+        </where>
+    </select>
+</mapper>

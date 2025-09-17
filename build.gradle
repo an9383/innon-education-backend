@@ -1,0 +1,77 @@
+plugins {
+	id 'java'
+	id 'war'
+	id 'org.springframework.boot' version '3.3.1'
+	id 'io.spring.dependency-management' version '1.1.5'
+}
+
+group = 'com.innon'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+	configureEach {
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+	}
+}
+
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.6'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.6'
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.12.6'
+
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
+
+	implementation 'org.apache.logging.log4j:log4j-core:2.23.1'
+	implementation 'org.apache.logging.log4j:log4j-api:2.23.1'
+	implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+	implementation 'org.slf4j:slf4j-api:2.0.13'
+	implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16'
+
+	implementation 'org.apache.poi:poi-ooxml:5.2.3'
+	implementation 'org.apache.poi:poi:5.2.3'             // POI Core 라이브러리
+	implementation 'org.apache.xmlbeans:xmlbeans:5.1.1'   // XMLBeans 라이브러리
+	implementation 'commons-collections:commons-collections:3.2.2'  // 필요한 추가 의존성
+
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+
+//	database 설정시 까지 mysql 사용 .
+	runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+//	implementation 'com.microsoft.sqlserver:mssql-jdbc'
+//	runtimeOnly 'com.mysql:mysql-connector-j'
+
+
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
