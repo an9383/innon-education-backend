@@ -11,7 +11,7 @@ import com.innon.education.auth.repository.UserRepository;
 import com.innon.education.common.repository.dto.CodeDTO;
 import com.innon.education.common.repository.model.EmailMessage;
 import com.innon.education.common.service.EmailService;
-import com.innon.education.dao.CodeDAO;
+import com.innon.education.code.controller.dao.CodeDAO;
 import com.innon.education.jwt.dto.CustomUserDetails;
 import com.innon.education.management.plan.dao.ManagementPlanDAO;
 import com.innon.education.management.plan.repository.dto.ManagementPlanDTO;

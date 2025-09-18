@@ -3,7 +3,7 @@ package com.innon.education.bank.controller;
 import com.innon.education.bank.repository.model.QbQuestion;
 import com.innon.education.bank.repository.model.QuestionBank;
 import com.innon.education.bank.service.QuestionBankService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

@@ -2,7 +2,7 @@ package com.innon.education.bank.service;
 
 import com.innon.education.bank.repository.model.QbQuestion;
 import com.innon.education.bank.repository.model.QuestionBank;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 

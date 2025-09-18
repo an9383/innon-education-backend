@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.innon.education.auth.entity.User;
 import com.innon.education.common.dao.CommonDAO;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.new_education.dto.CurrentSignDTO;
 import com.innon.education.new_education.dto.New_SearchDTO;
 import com.innon.education.new_education.service.NewSignService;

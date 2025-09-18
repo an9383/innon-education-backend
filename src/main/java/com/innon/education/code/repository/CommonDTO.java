@@ -1,4 +1,4 @@
-package com.innon.education.controller.dto;
+package com.innon.education.code.controller.dto;
 
 import com.innon.education.admin.group.repository.Group;
 import com.innon.education.admin.system.sign.repository.PlanSignManager;

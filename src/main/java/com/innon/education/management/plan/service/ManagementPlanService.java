@@ -2,11 +2,10 @@ package com.innon.education.management.plan.service;
 
 import java.util.List;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.innon.education.auth.dto.request.LoginRequest;
 import com.innon.education.library.document.repasitory.dto.PlanDocument;
 import com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity;
 import com.innon.education.management.plan.repository.model.EducationPlanContent;
@@ -15,7 +14,6 @@ import com.innon.education.management.plan.repository.model.ManagementPlan;
 import com.innon.education.management.plan.repository.model.PlanQms;
 import com.innon.education.management.plan.repository.model.QuestionInfo;
 import com.innon.education.management.plan.repository.model.UserEduCurrent;
-import com.innon.education.auth.entity.User;
 
 import jakarta.servlet.http.HttpServletRequest;
 

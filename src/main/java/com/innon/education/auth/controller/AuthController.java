@@ -5,7 +5,7 @@ import com.innon.education.auth.dto.request.RegisterRequest;
 import com.innon.education.auth.dto.response.AuthenticationDto;
 import com.innon.education.auth.service.AuthenticationService;
 import com.innon.education.common.service.CommonService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.sso.CipherDec;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

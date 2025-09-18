@@ -1,4 +1,4 @@
-package com.innon.education.mapper;
+package com.innon.education.code.mapper;
 
 import com.innon.education.common.repository.dto.CodeDTO;
 import com.innon.education.common.repository.model.Code;

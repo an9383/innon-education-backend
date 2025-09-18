@@ -2,7 +2,7 @@ package com.innon.education.common.controller;
 
 import com.innon.education.auth.entity.Role;
 import com.innon.education.common.service.UserRoleService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

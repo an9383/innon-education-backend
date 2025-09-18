@@ -1,6 +1,6 @@
 package com.innon.education.management.evaluation.service;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.evaluation.repository.model.ManagementEval;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;

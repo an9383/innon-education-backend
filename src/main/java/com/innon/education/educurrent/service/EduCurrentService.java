@@ -1,6 +1,6 @@
 package com.innon.education.educurrent.service;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.educurrent.repository.model.EduCurrent;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;

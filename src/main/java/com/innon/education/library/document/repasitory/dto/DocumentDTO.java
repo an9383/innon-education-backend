@@ -1,6 +1,6 @@
 package com.innon.education.library.document.repasitory.dto;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import lombok.Data;
 
 import java.util.Date;

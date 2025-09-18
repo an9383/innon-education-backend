@@ -13,7 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.evaluation.dao.ManagementEvalDAO;
 import com.innon.education.management.evaluation.repository.dto.EduQuestionDTO;
 import com.innon.education.management.evaluation.repository.dto.ManagementEvalDTO;

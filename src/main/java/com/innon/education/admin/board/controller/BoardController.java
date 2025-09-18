@@ -2,7 +2,7 @@ package com.innon.education.admin.board.controller;
 
 import com.innon.education.admin.board.repository.model.Board;
 import com.innon.education.admin.board.service.BoardService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

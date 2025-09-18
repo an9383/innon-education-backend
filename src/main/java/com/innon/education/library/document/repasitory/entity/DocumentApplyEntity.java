@@ -2,7 +2,7 @@ package com.innon.education.library.document.repasitory.entity;
 
 import java.util.Date;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.library.document.repasitory.model.Document;
 import com.innon.education.library.factory.repository.model.Factory;
 

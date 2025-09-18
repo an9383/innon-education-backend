@@ -1,6 +1,6 @@
 package com.innon.education.admin.group.repository;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import lombok.Data;
 
 @Data

@@ -1,6 +1,6 @@
 package com.innon.education.library.factory.repository.entity;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.library.factory.repository.model.Factory;
 import lombok.Data;
 import lombok.Getter;

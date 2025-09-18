@@ -2,7 +2,7 @@ package com.innon.education.admin.mypage.controller;
 
 import com.innon.education.admin.mypage.repository.model.Mypage;
 import com.innon.education.admin.mypage.service.MypageService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.innon.education.controller.dto;
+package com.innon.education.code.controller.dto;
 
 import lombok.Data;
 

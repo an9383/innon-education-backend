@@ -12,7 +12,7 @@ import com.innon.education.admin.board.repository.entity.BoardSearchEntity;
 import com.innon.education.admin.board.repository.model.Board;
 import com.innon.education.admin.board.service.BoardService;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 
 @Service
 public class BoardServiceImpl implements BoardService {

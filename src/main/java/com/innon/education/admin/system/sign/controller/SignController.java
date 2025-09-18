@@ -3,7 +3,7 @@ package com.innon.education.admin.system.sign.controller;
 import com.innon.education.admin.system.sign.repository.PlanSignManager;
 import com.innon.education.admin.system.sign.repository.Sign;
 import com.innon.education.admin.system.sign.service.SignService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.plan.dao.ManagementPlanDAO;
 import com.innon.education.management.plan.repository.entity.PlanQmsEntity;
 import com.innon.education.management.plan.repository.model.PlanQms;

@@ -4,7 +4,7 @@ import org.springframework.security.core.Authentication;
 
 import com.innon.education.admin.system.sign.repository.PlanSignManager;
 import com.innon.education.admin.system.sign.repository.Sign;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 

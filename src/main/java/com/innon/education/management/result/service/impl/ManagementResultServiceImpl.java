@@ -13,7 +13,6 @@ import org.springframework.util.ObjectUtils;
 
 import com.innon.education.admin.system.sign.dao.SignDAO;
 import com.innon.education.admin.system.sign.repository.PlanSign;
-import com.innon.education.admin.system.sign.repository.PlanSignDetail;
 import com.innon.education.admin.system.sign.repository.PlanSignManager;
 import com.innon.education.admin.system.sign.repository.SignDTO;
 import com.innon.education.admin.system.sign.service.SignService;
@@ -21,7 +20,7 @@ import com.innon.education.auth.entity.User;
 import com.innon.education.common.repository.entity.LogEntity;
 import com.innon.education.common.service.CommonService;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.library.document.dao.DocumentDAO;
 import com.innon.education.library.document.repasitory.model.DocumentMemo;
 import com.innon.education.management.plan.dao.ManagementPlanDAO;

@@ -1,6 +1,6 @@
 package com.innon.education.qualified.current.service;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO;
 import com.innon.education.qualified.current.repository.model.JobRequest;
 import com.innon.education.qualified.current.repository.model.JobRevision;

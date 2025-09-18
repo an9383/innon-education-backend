@@ -2,7 +2,7 @@ package com.innon.education.qualified.current.repository.model;
 
 import com.innon.education.admin.system.sign.repository.PlanSignManager;
 import com.innon.education.auth.dto.request.LoginRequest;
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.qualified.current.repository.entity.JobSkillItemEntity;
 import lombok.Data;
 

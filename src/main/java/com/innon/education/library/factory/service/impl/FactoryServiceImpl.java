@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.innon.education.admin.system.sign.dao.SignDAO;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.library.factory.dao.FactoryDAO;
 import com.innon.education.library.factory.repository.dto.FactoryDTO;
 import com.innon.education.library.factory.repository.entity.FactoryEntity;

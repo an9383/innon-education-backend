@@ -1,6 +1,6 @@
 package com.innon.education.admin.manage.service;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import com.innon.education.admin.manage.repository.Manager;
 import org.springframework.security.core.Authentication;

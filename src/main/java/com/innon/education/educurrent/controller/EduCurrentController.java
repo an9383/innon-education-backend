@@ -1,6 +1,6 @@
 package com.innon.education.educurrent.controller;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.educurrent.repository.model.EduCurrent;
 import com.innon.education.educurrent.service.EduCurrentService;
 import jakarta.annotation.Nullable;

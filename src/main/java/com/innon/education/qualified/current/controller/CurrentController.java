@@ -18,7 +18,7 @@ import com.innon.education.admin.group.repository.Group;
 import com.innon.education.auth.entity.User;
 import com.innon.education.common.dao.CommonDAO;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.plan.repository.dto.ManagementPlanUserDTO;
 import com.innon.education.qualified.current.repository.model.JobRequest;
 import com.innon.education.qualified.current.repository.model.JobRevision;

@@ -3,7 +3,7 @@ package com.innon.education.management.plan.repository.model;
 import com.innon.education.admin.system.sign.repository.PlanSignManager;
 import com.innon.education.annual.plan.repository.model.AnnualPlan;
 import com.innon.education.auth.dto.request.LoginRequest;
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.library.document.repasitory.dto.PlanDocument;
 import com.innon.education.management.plan.repository.dto.ManagementPlanDTO;
 import com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity;

@@ -1,6 +1,6 @@
 package com.innon.education.management.progress.controller;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.progress.repository.entity.UserAttendanceEntity;
 import com.innon.education.management.progress.repository.model.ManagementProgress;
 import com.innon.education.management.progress.service.ManagementProgressService;

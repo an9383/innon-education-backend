@@ -15,7 +15,7 @@ import com.innon.education.auth.entity.User;
 import com.innon.education.common.dao.UserRoleDAO;
 import com.innon.education.common.service.UserRoleService;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 

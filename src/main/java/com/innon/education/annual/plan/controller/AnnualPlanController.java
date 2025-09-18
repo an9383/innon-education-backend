@@ -5,7 +5,7 @@ import com.innon.education.annual.plan.repository.model.AnnualPlan;
 import com.innon.education.annual.plan.service.AnnualPlanService;
 import com.innon.education.auth.entity.User;
 import com.innon.education.common.service.CommonService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -3,7 +3,7 @@ package com.innon.education.admin.system.sign.repository;
 import com.innon.education.annual.plan.repository.model.AnnualPlan;
 import com.innon.education.auth.dto.request.LoginRequest;
 import com.innon.education.common.repository.model.Dept;
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import lombok.Data;
 
 import java.util.Date;

@@ -1,7 +1,7 @@
 package com.innon.education.service;
 
 import com.innon.education.common.repository.model.Code;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 

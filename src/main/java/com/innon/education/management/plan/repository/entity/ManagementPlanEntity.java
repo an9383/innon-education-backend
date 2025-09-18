@@ -1,6 +1,6 @@
 package com.innon.education.management.plan.repository.entity;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.management.plan.repository.dto.ManagementPlanDTO;
 import com.innon.education.management.plan.repository.model.EducationPlanLab;
 import com.innon.education.management.plan.repository.model.ManagementPlan;

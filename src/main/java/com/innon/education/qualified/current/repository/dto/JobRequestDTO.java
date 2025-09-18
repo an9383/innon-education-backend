@@ -1,6 +1,6 @@
 package com.innon.education.qualified.current.repository.dto;
 
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import com.innon.education.qualified.current.repository.model.JobRevision;
 import lombok.Data;
 

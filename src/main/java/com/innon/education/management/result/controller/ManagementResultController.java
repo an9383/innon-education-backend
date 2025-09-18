@@ -1,7 +1,7 @@
 package com.innon.education.management.result.controller;
 
 import com.innon.education.common.service.CommonService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.result.repository.model.ManagementResult;
 import com.innon.education.management.result.service.ManagementResultService;
 import jakarta.annotation.Nullable;

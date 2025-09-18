@@ -1,6 +1,6 @@
 package com.innon.education.library.location.controller;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.library.location.repository.model.Location;
 import com.innon.education.library.location.service.LocationService;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,6 @@
 package com.innon.education.library.document.controller;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.library.document.repasitory.model.Document;
 import com.innon.education.library.document.repasitory.model.DocumentMemo;
 import com.innon.education.library.document.service.DocumentService;

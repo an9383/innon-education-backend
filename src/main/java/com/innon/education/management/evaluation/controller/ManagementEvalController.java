@@ -1,6 +1,6 @@
 package com.innon.education.management.evaluation.controller;
 
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.evaluation.repository.model.ManagementEval;
 import com.innon.education.management.evaluation.service.ManagementEvalService;
 import jakarta.annotation.Nullable;

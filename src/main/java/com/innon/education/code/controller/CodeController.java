@@ -1,8 +1,8 @@
-package com.innon.education.controller;
+package com.innon.education.code.controller;
 
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.common.repository.model.Code;
-import com.innon.education.controller.dto.ResultDTO;
-import com.innon.education.service.CodeService;
+import com.innon.education.code.controller.service.CodeService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

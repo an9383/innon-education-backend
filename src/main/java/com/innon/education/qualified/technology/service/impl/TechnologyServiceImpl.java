@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.qualified.technology.dao.TechnologyDAO;
 import com.innon.education.qualified.technology.repository.dto.TechnologyDTO;
 import com.innon.education.qualified.technology.repository.entity.TechnologyEntity;

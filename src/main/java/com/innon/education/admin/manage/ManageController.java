@@ -1,7 +1,7 @@
 package com.innon.education.admin.manage;
 
 import com.innon.education.admin.manage.service.ManagerService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import com.innon.education.admin.manage.repository.Manager;
 

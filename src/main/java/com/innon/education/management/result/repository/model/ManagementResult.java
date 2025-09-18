@@ -1,7 +1,7 @@
 package com.innon.education.management.result.repository.model;
 
 import com.innon.education.auth.dto.request.LoginRequest;
-import com.innon.education.controller.dto.CommonDTO;
+import com.innon.education.code.controller.dto.CommonDTO;
 import lombok.Data;
 
 import java.util.List;

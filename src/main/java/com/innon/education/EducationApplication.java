@@ -10,7 +10,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootApplication
 public class EducationApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(EducationApplication.class, args);
 
@@ -32,9 +31,7 @@ public class EducationApplication {
                         HttpMethod.HEAD.name(),
                         HttpMethod.POST.name(),
                         HttpMethod.PUT.name(),
-                        HttpMethod.DELETE.name());;
-                // "http://10.224.110.52:8080", "http://10.224.110.52:8080/" 임시추가
-
+                        HttpMethod.DELETE.name());
             }
         };
     }

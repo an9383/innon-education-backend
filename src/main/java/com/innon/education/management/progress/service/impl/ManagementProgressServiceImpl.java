@@ -13,7 +13,7 @@ import com.innon.education.common.repository.entity.LogChild;
 import com.innon.education.common.repository.entity.LogEntity;
 import com.innon.education.common.service.CommonService;
 import com.innon.education.common.util.DataLib;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import com.innon.education.management.plan.dao.ManagementPlanDAO;
 import com.innon.education.management.plan.repository.dto.ManagementPlanDTO;
 import com.innon.education.management.plan.repository.entity.ManagementPlanUserEntity;

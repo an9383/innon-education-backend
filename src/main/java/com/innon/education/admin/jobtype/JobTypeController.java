@@ -2,7 +2,7 @@ package com.innon.education.admin.jobtype;
 
 import com.innon.education.admin.jobtype.repository.JobType;
 import com.innon.education.admin.jobtype.service.JobTypeService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

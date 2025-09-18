@@ -2,7 +2,7 @@ package com.innon.education.admin.group;
 
 import com.innon.education.admin.group.repository.Group;
 import com.innon.education.admin.group.service.GroupService;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

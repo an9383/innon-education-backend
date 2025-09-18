@@ -3,7 +3,7 @@ package com.innon.education.annual.plan.service;
 import com.innon.education.annual.plan.repository.entity.AnnualPlanJoinTable;
 import com.innon.education.annual.plan.repository.entity.AnnualPlanSearchEntity;
 import com.innon.education.annual.plan.repository.model.AnnualPlan;
-import com.innon.education.controller.dto.ResultDTO;
+import com.innon.education.code.controller.dto.ResultDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 
